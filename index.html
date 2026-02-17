@@ -2,312 +2,349 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport"
-      content="width=device-width, initial-scale=1,
-               maximum-scale=1, user-scalable=no">
-  <title>カウンター</title>
+
+  <!-- ズーム完全禁止（ピンチ＆ダブルタップ） -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <title>カウントボード</title>
 
   <style>
     :root{
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
     }
-    html, body {
-      touch-action: manipulation;
-    }
-    body{margin:0;padding:16px;background:#f4f6f9;}
-    h1{font-size:18px;margin:0 0 12px;}
+    html, body { touch-action: manipulation; }
 
-    .toolbar{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin: 0 0 14px;
-    }
+    body{margin:0;padding:16px;background:#f4f6f9;}
+    h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
+
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
     .toolbtn{
-      height:42px;
-      padding:0 14px;
-      border:0;
-      border-radius:10px;
-      background:#1f6feb;
-      color:#fff;
-      font-weight:800;
-      cursor:pointer;
+      height:42px;padding:0 14px;border:0;border-radius:10px;
+      background:#1f6feb;color:#fff;font-weight:800;cursor:pointer;
       -webkit-tap-highlight-color:transparent;
     }
     .toolbtn.secondary{ background:#6e7781; }
     .toolbtn:active{ transform:scale(0.98); }
 
-    .grid{display:grid;grid-template-columns:1fr;gap:12px;}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px;}
     @media (min-width:520px){ .grid{grid-template-columns:1fr 1fr;} }
 
     .card{
       background:#fff;
       padding:14px;
-      border-radius:12px;
+      border-radius:14px;
       box-shadow:0 2px 8px rgba(0,0,0,0.08);
+
+      /* おしゃれアクセント用 */
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #e9eef6;
+      padding-left: 18px; /* 左ライン分の余白 */
     }
 
-    .toprow{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      margin-bottom:10px;
+    /* 左のアクセントライン（上品に少しだけ艶） */
+    .card::before{
+      content:"";
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width: 10px;
+      background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(0,0,0,.08)), var(--accent, #2563EB);
     }
 
+    .toprow{display:flex;gap:8px;margin-bottom:12px;}
     .name-input{
-      flex:1;
-      font-size:16px;
-      font-weight:800;
-      border:1px solid #e1e6ef;
-      border-radius:10px;
-      padding:8px 10px;
-      box-sizing:border-box;
+      flex:1;font-size:16px;font-weight:800;
+      border:1px solid #e1e6ef;border-radius:10px;
+      padding:8px 10px;box-sizing:border-box;
       background:#fff;
     }
+    .name-input:focus{
+      outline:none;
+      border-color: var(--accent, #2563EB);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+    }
 
-    .delbtn{
-      width:44px;height:40px;
-      border:0;border-radius:10px;
-      background:#f2f2f2;
-      cursor:pointer;
-      font-weight:900;
+    .iconbtn{
+      width:44px;height:40px;border:0;border-radius:10px;
+      background:#f2f2f2;cursor:pointer;font-weight:900;
       -webkit-tap-highlight-color:transparent;
     }
-    .delbtn:active{ transform:scale(0.97); }
+    .iconbtn:active{ transform:scale(0.97); }
 
-    .row{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-
+    .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;}
     .btns{display:flex;gap:10px;}
 
     .btn{
-      width:52px;height:44px;
-      border:0;border-radius:10px;
-      background:#e5eaf2;
-      font-size:22px;
-      font-weight:900;
-      cursor:pointer;
+      width:56px;height:48px;border:0;border-radius:12px;
+      font-size:24px;font-weight:900;cursor:pointer;
       -webkit-tap-highlight-color:transparent;
+      touch-action: manipulation;
     }
     .btn:active{ transform:scale(0.97); }
 
-    .value{
-      font-size:28px;
-      font-weight:900;
-      min-width:70px;
-      text-align:center;
+    /* ＋はアクセント色で */
+    .btn.plus{
+      background: var(--accent, #2563EB);
+      color:#fff;
+      box-shadow: 0 6px 16px rgba(0,0,0,.10);
     }
 
-    .hint{font-size:12px;color:#666;margin-top:8px;}
+    /* −は控えめ */
+    .btn.minus{
+      background:#e5eaf2;
+      color:#111;
+    }
+
+    .value{font-size:32px;font-weight:900;min-width:70px;text-align:center;color:#111;}
+
+    details.memo{
+      margin-top:10px;
+      background:#fafbfc;
+      border:1px solid #e6ebf2;
+      border-radius:10px;
+      padding:8px 10px;
+    }
+    details.memo summary{cursor:pointer;font-weight:800;}
+    .memo-area{
+      width:100%;box-sizing:border-box;
+      margin-top:8px;min-height:90px;
+      padding:10px;border-radius:10px;border:1px solid #dfe6f1;
+      resize:vertical;font-size:14px;background:#fff;
+    }
+    .hint{font-size:12px;color:#666;margin-top:6px;}
   </style>
 </head>
 
 <body>
-  <h1>カウンター</h1>
+  <h1>カウントボード</h1>
 
-  <!-- 操作ボタン -->
   <div class="toolbar">
     <button class="toolbtn" type="button" id="addGroupBtn">＋ グループ追加</button>
     <button class="toolbtn secondary" type="button" id="resetBtn">初期化</button>
   </div>
 
-  <!-- グループ表示 -->
   <div class="grid" id="grid"></div>
 
   <script>
     /*
-      要件：
-      - グループ数は自由に増やせる（追加ボタン）
-      - マイナスは0未満禁止
-      - 初期化ボタン（確認あり）
-      - 名前も変更可能
-      - 変更は自動保存（localStorage）
-      - ついでに：グループ削除（確認あり）
+      機能
+      - グループ数：自由に追加
+      - 値：0未満禁止
+      - 初期化：確認あり（グループ数/名前/値/メモ/色も初期状態へ）
+      - グループ削除：確認あり
+      - グループ名編集
+      - グループごとメモ：折りたたみ、保存あり
+      - 色：おしゃれ配色セットからランダム（グループごとに固定して保存）
     */
 
-    const STORAGE_KEY = "counter_app_dynamic_v1";
+    const STORAGE_KEY = "count_board_v2_random_accent";
 
-    // 初期グループ（初期化時にここへ戻す）
-    function defaultGroups() {
+    // おしゃれ系アクセント（事故りにくいセット）
+    const ACCENTS = [
+      "#2563EB", // blue
+      "#16A34A", // green
+      "#F59E0B", // amber
+      "#EF4444", // red
+      "#8B5CF6", // purple
+      "#06B6D4", // cyan
+      "#EC4899", // pink
+      "#64748B"  // slate
+    ];
+
+    function pickAccent() {
+      return ACCENTS[Math.floor(Math.random() * ACCENTS.length)];
+    }
+
+    function makeId(){
+      return "g_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8);
+    }
+
+    // 初期グループ（初期化時にここへ戻る）
+    function defaultGroups(){
       return [
-        { id: makeId(), name: "グループ1", value: 0 },
-        { id: makeId(), name: "グループ2", value: 0 },
-        { id: makeId(), name: "グループ3", value: 0 },
-        { id: makeId(), name: "グループ4", value: 0 },
+        { id: makeId(), name:"グループ1", value:0, memo:"", accent: pickAccent() },
+        { id: makeId(), name:"グループ2", value:0, memo:"", accent: pickAccent() },
+        { id: makeId(), name:"グループ3", value:0, memo:"", accent: pickAccent() },
+        { id: makeId(), name:"グループ4", value:0, memo:"", accent: pickAccent() }
       ];
     }
 
-    // グループ配列（状態）
     let groups = [];
 
-    // できるだけ被らないID
-    function makeId() {
-      return "g_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
-    }
-
-    function save() {
+    function save(){
       localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
     }
 
-    function load() {
+    function load(){
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
+      if(!raw){
         groups = defaultGroups();
         save();
         return;
       }
-      try {
+      try{
         const parsed = JSON.parse(raw);
-        // 形式チェック（壊れてたら初期化）
-        if (!Array.isArray(parsed)) throw new Error("not array");
+        if(!Array.isArray(parsed)) throw new Error("not array");
+
+        // 古い保存データでも落ちないように補正
         groups = parsed.map(g => ({
           id: String(g.id ?? makeId()),
           name: String(g.name ?? "グループ"),
-          value: Number.isFinite(g.value) ? g.value : 0
+          value: Number.isFinite(g.value) ? g.value : 0,
+          memo: (typeof g.memo === "string") ? g.memo : "",
+          accent: (typeof g.accent === "string") ? g.accent : pickAccent()
         }));
-      } catch (e) {
+      }catch{
         groups = defaultGroups();
         save();
       }
     }
 
-    // 次の「グループN」番号を作る（既存の最大+1）
-    function nextGroupNumber() {
+    function nextGroupNumber(){
       let max = 0;
-      for (const g of groups) {
+      groups.forEach(g=>{
         const m = String(g.name).match(/^グループ(\d+)$/);
-        if (m) max = Math.max(max, Number(m[1]));
-      }
-      return max + 1;
+        if(m) max = Math.max(max, Number(m[1]));
+      });
+      return max+1;
     }
 
     const grid = document.getElementById("grid");
 
-    function render() {
-      // DOMを作り直す（シンプル＆確実）
+    // HTML注入の最低限エスケープ（名前用）
+    function esc(s){
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
+    function render(){
       grid.innerHTML = "";
 
-      groups.forEach(g => {
+      groups.forEach(g=>{
         const card = document.createElement("div");
         card.className = "card";
         card.dataset.id = g.id;
 
+        // グループ固有のアクセント色をCSS変数に設定
+        card.style.setProperty("--accent", g.accent);
+
         card.innerHTML = `
           <div class="toprow">
-            <input class="name-input" data-name value="${escapeHtml(g.name)}" />
-            <button class="delbtn" type="button" data-action="delete" title="このグループを削除">✕</button>
+            <input class="name-input" data-name value="${esc(g.name)}">
+            <button class="iconbtn" type="button" data-action="delete" title="このグループを削除">✕</button>
           </div>
 
           <div class="row">
             <div class="btns">
-              <button class="btn" type="button" data-action="dec">−</button>
-              <button class="btn" type="button" data-action="inc">＋</button>
+              <button class="btn minus" type="button" data-action="dec">−</button>
+              <button class="btn plus"  type="button" data-action="inc">＋</button>
             </div>
             <div class="value" data-value>${g.value}</div>
           </div>
 
+          <details class="memo">
+            <summary>メモ</summary>
+            <textarea class="memo-area" data-memo placeholder="このグループのメモを入力（自動保存）">${esc(g.memo)}</textarea>
+            <div class="hint">※メモは端末内に保存されます</div>
+          </details>
         `;
 
         grid.appendChild(card);
       });
     }
 
-    // HTMLのvalueに入れる用（最低限）
-    function escapeHtml(s) {
-      return String(s)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-    }
-
     // 初期ロード
     load();
     render();
 
-    // 追加ボタン
+    // グループ追加
     document.getElementById("addGroupBtn").addEventListener("click", () => {
       const n = nextGroupNumber();
-      groups.push({ id: makeId(), name: `グループ${n}`, value: 0 });
+      groups.push({
+        id: makeId(),
+        name: `グループ${n}`,
+        value: 0,
+        memo: "",
+        accent: pickAccent() // ランダム（ただしセットから）
+      });
       save();
       render();
     });
 
-    // 初期化ボタン（確認あり）
+    // 初期化（確認あり）
     document.getElementById("resetBtn").addEventListener("click", () => {
-      const ok = confirm("初期化します。\n（グループ数・名前・数値が初期状態に戻ります）\nよろしいですか？");
-      if (!ok) return;
+      const ok = confirm("初期化します。\n（グループ数・名前・数値・メモ・色が初期状態に戻ります）\nよろしいですか？");
+      if(!ok) return;
 
       groups = defaultGroups();
       save();
       render();
     });
 
-    // ＋／−／削除（イベント委任）
+    // + / - / 削除（イベント委任：clickだけで1回動作）
     document.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-action]");
-      if (!btn) return;
+      if(!btn) return;
 
       const card = btn.closest(".card");
       const id = card?.dataset.id;
-      if (!id) return;
+      if(!id) return;
 
       const g = groups.find(x => x.id === id);
-      if (!g) return;
+      if(!g) return;
 
       const action = btn.dataset.action;
 
-      if (action === "inc") {
+      if(action === "inc"){
         g.value += 1;
+        card.querySelector("[data-value]").textContent = g.value;
+        save();
+        return;
       }
 
-      if (action === "dec") {
+      if(action === "dec"){
         // 0未満禁止
         g.value = Math.max(0, g.value - 1);
+        card.querySelector("[data-value]").textContent = g.value;
+        save();
+        return;
       }
 
-      if (action === "delete") {
+      if(action === "delete"){
         const ok = confirm(`「${g.name}」を削除します。よろしいですか？`);
-        if (!ok) return;
+        if(!ok) return;
         groups = groups.filter(x => x.id !== id);
+        save();
+        render();
+        return;
       }
-
-      save();
-      render();
     });
 
-    // グループ名変更（入力中に保存）
+    // グループ名・メモ変更（入力中に保存。renderしない＝カーソルが飛ばない）
     document.addEventListener("input", (e) => {
-      const inp = e.target.closest("input[data-name]");
-      if (!inp) return;
+      const card = e.target.closest(".card");
+      if(!card) return;
 
-      const card = inp.closest(".card");
-      const id = card?.dataset.id;
-      if (!id) return;
-
+      const id = card.dataset.id;
       const g = groups.find(x => x.id === id);
-      if (!g) return;
+      if(!g) return;
 
-      g.name = inp.value;
-      save();
-      // renderはしない（入力中にカーソルが飛ぶのを防ぐ）
-    });
-
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', function (event) {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        event.preventDefault();
+      if(e.target.matches("input[data-name]")){
+        g.name = e.target.value;
+        save();
+        return;
       }
-      lastTouchEnd = now;
-    }, { passive: false });
+
+      if(e.target.matches("textarea[data-memo]")){
+        g.memo = e.target.value;
+        save();
+        return;
+      }
+    });
   </script>
 </body>
 </html>
-
-
