@@ -17,7 +17,6 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
 .toolbtn{
   height:42px;padding:0 14px;border:0;border-radius:10px;
   background:#2563EB;color:#fff;font-weight:800;cursor:pointer;
-  -webkit-tap-highlight-color:transparent;
 }
 .toolbtn.secondary{background:#6e7781;}
 .toolbtn:active{transform:scale(0.98);}
@@ -35,21 +34,20 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
   overflow:hidden;
 }
 
-/* 左のアクセントライン */
-.card::before{
-  content:"";
+/* ===== タップ可能な縦帯 ===== */
+.color-strip{
   position:absolute;
   left:0;top:0;bottom:0;
   width:10px;
   background:var(--accent,#A5B4FC);
 }
+.color-strip:active{filter:brightness(0.9);}
 
 .toprow{display:flex;gap:8px;margin-bottom:12px;}
 .name-input{
   flex:1;font-size:15px;font-weight:800;
   border:1px solid #e1e6ef;border-radius:10px;
   padding:8px 10px;box-sizing:border-box;
-  background:#fff;
 }
 .name-input:focus{
   outline:none;
@@ -60,7 +58,6 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
 .iconbtn{
   width:44px;height:40px;border:0;border-radius:10px;
   background:#f2f2f2;cursor:pointer;font-weight:900;
-  -webkit-tap-highlight-color:transparent;
 }
 .iconbtn:active{transform:scale(0.97);}
 
@@ -70,53 +67,55 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
 .btn{
   width:56px;height:48px;border:0;border-radius:12px;
   font-size:24px;font-weight:900;cursor:pointer;
-  -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation;
 }
 .btn:active{transform:scale(0.97);}
+.btn.plus{background:var(--accent);color:#111;}
+.btn.minus{background:#e5eaf2;}
 
-.btn.plus{
-  background:var(--accent);
-  color:#111;
-}
-.btn.minus{
-  background:#e5eaf2;
-  color:#111;
-}
-
-.value{
-  font-size:30px;
-  font-weight:900;
-  min-width:70px;
-  text-align:center;
-  color:#111;
-}
+.value{font-size:30px;font-weight:900;min-width:70px;text-align:center;}
 
 details.memo{
-  margin-top:8px;
-  background:#fafbfc;
-  border:1px solid #e6ebf2;
-  border-radius:10px;
-  padding:6px 8px;
+  margin-top:8px;background:#fafbfc;
+  border:1px solid #e6ebf2;border-radius:10px;padding:6px 8px;
 }
-details.memo summary{
-  cursor:pointer;
-  font-weight:700;
-  font-size:13px;
-}
+details.memo summary{cursor:pointer;font-weight:700;font-size:13px;}
 .memo-area{
-  width:100%;
-  box-sizing:border-box;
-  margin-top:6px;
-  min-height:60px;
-  padding:8px;
-  border-radius:8px;
-  border:1px solid #dfe6f1;
-  resize:vertical;
-  font-size:13px;
-  background:#fff;
+  width:100%;box-sizing:border-box;margin-top:6px;
+  min-height:60px;padding:8px;border-radius:8px;
+  border:1px solid #dfe6f1;resize:vertical;font-size:13px;
 }
-.hint{font-size:11px;color:#777;margin-top:4px;}
+
+/* ===== モーダル ===== */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,0.35);
+  display:none;align-items:flex-end;justify-content:center;
+  padding:12px;z-index:9999;
+}
+.modal{
+  width:min(520px,100%);background:#fff;border-radius:16px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.25);overflow:hidden;
+}
+.modal-header{
+  padding:12px 14px;display:flex;justify-content:space-between;
+  border-bottom:1px solid #eef2f7;
+}
+.modal-title{font-weight:900;}
+.modal-close{
+  border:0;background:#f2f2f2;border-radius:10px;
+  width:44px;height:36px;font-weight:900;cursor:pointer;
+}
+.modal-body{padding:12px 14px 14px;}
+.palette{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.color-btn{
+  height:46px;border:1px solid #e6ebf2;border-radius:12px;
+  cursor:pointer;position:relative;
+}
+.color-btn:active{transform:scale(0.98);}
+.color-btn[aria-selected="true"]::after{
+  content:"✓";position:absolute;right:10px;top:10px;
+  font-weight:900;background:rgba(255,255,255,0.7);
+  border-radius:999px;padding:2px 8px;
+}
 </style>
 </head>
 
@@ -130,37 +129,32 @@ details.memo summary{
 
 <div class="grid" id="grid"></div>
 
-<script>
-const STORAGE_KEY="count_board_v4_pastel16_no_near";
+<div class="modal-backdrop" id="colorModalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">色を選択</div>
+      <button class="modal-close" id="colorModalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="palette" id="palette"></div>
+    </div>
+  </div>
+</div>
 
-/*
-  パステル16色（近い色が連続しにくいよう、色相を分散）
-  ※グレー系は入れない
-*/
-const ACCENTS = [
-  "#A5B4FC", // indigo
-  "#93C5FD", // blue
-  "#67E8F9", // sky
-  "#99F6E4", // teal
-  "#86EFAC", // green
-  "#BEF264", // lime
-  "#FDE68A", // yellow
-  "#FED7AA", // orange
-  "#FECACA", // red
-  "#FDBA74", // orange2（赤と離す）
-  "#FBCFE8", // pink
-  "#F9A8D4", // pink2
-  "#DDD6FE", // purple
-  "#C4B5FD", // violet
-  "#BAE6FD", // light blue2
-  "#BBF7D0"  // mint
+<script>
+const STORAGE_KEY="count_board_v6_longpress_color";
+
+const ACCENTS=[
+  "#A5B4FC","#93C5FD","#67E8F9","#99F6E4",
+  "#86EFAC","#BEF264","#FDE68A","#FED7AA",
+  "#FECACA","#FDBA74","#FBCFE8","#F9A8D4",
+  "#DDD6FE","#C4B5FD","#BAE6FD","#BBF7D0"
 ];
 
-// 配布用プール（「一巡するまで重複なし」）
-let accentPool = [];
+let accentPool=[];
 
 function shuffle(arr){
-  const a = arr.slice();
+  const a=arr.slice();
   for(let i=a.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
     [a[i],a[j]]=[a[j],a[i]];
@@ -168,14 +162,23 @@ function shuffle(arr){
   return a;
 }
 
+function rebuildAccentPool(){
+  const used=new Set(groups.map(g=>g.accent));
+  accentPool=shuffle(ACCENTS.filter(c=>!used.has(c)));
+}
+
+function pickAccent(){
+  if(accentPool.length===0) accentPool=shuffle(ACCENTS);
+  return accentPool.shift();
+}
+
 function makeId(){
   return "g_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
 }
 
 function defaultGroups(){
-  // 初期化時も「被りにくい配色」にしたいので、プールを作ってから配る
-  accentPool = shuffle(ACCENTS);
-  return [
+  accentPool=shuffle(ACCENTS);
+  return[
     {id:makeId(),name:"グループ1",value:0,memo:"",accent:accentPool.shift()},
     {id:makeId(),name:"グループ2",value:0,memo:"",accent:accentPool.shift()},
     {id:makeId(),name:"グループ3",value:0,memo:"",accent:accentPool.shift()},
@@ -185,91 +188,16 @@ function defaultGroups(){
 
 let groups=[];
 
-function save(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(groups));
-}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(groups));}
 
 function load(){
   const raw=localStorage.getItem(STORAGE_KEY);
-  if(!raw){
-    groups=defaultGroups();
-    save();
-    return;
-  }
-  try{
-    const parsed=JSON.parse(raw);
-    if(!Array.isArray(parsed)) throw new Error("not array");
-    groups=parsed.map(g=>({
-      id:g.id||makeId(),
-      name:g.name||"グループ",
-      value:Number.isFinite(g.value)?g.value:0,
-      memo:(typeof g.memo==="string")?g.memo:"",
-      accent:(typeof g.accent==="string")?g.accent:null
-    }));
-  }catch{
-    groups=defaultGroups();
-    save();
-  }
-
-  // 既存グループにaccentが無ければ付与
-  for(const g of groups){
-    if(!g.accent) g.accent = pickAccent();
-  }
-
-  // 既に使っている色はプールから除外して、次の追加が被りにくいようにする
+  if(!raw){groups=defaultGroups();save();return;}
+  try{groups=JSON.parse(raw);}catch{groups=defaultGroups();}
   rebuildAccentPool();
 }
 
-/*
-  プールを再構築：
-  - 既に使っている色は除外
-  - それ以外をシャッフル
-  - 直前の色と同じなら先頭を入れ替え
-*/
-function rebuildAccentPool(){
-  const used = new Set(groups.map(g => g.accent));
-  accentPool = shuffle(ACCENTS.filter(c => !used.has(c)));
-
-  const last = groups.length ? groups[groups.length-1].accent : null;
-  if(last && accentPool.length>1 && accentPool[0]===last){
-    [accentPool[0],accentPool[1]]=[accentPool[1],accentPool[0]];
-  }
-}
-
-function pickAccent(){
-  // プールが空なら再構築（=2周目以降）
-  if(accentPool.length===0){
-    accentPool = shuffle(ACCENTS);
-
-    // 直前と同色を避ける
-    const last = groups.length ? groups[groups.length-1].accent : null;
-    if(last && accentPool.length>1 && accentPool[0]===last){
-      [accentPool[0],accentPool[1]]=[accentPool[1],accentPool[0]];
-    }
-  }
-  return accentPool.shift();
-}
-
-function nextGroupNumber(){
-  let max=0;
-  groups.forEach(g=>{
-    const m=String(g.name).match(/^グループ(\d+)$/);
-    if(m)max=Math.max(max,Number(m[1]));
-  });
-  return max+1;
-}
-
 const grid=document.getElementById("grid");
-
-// 注入対策：最低限のエスケープ（名前・メモ用）
-function esc(s){
-  return String(s)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#39;");
-}
 
 function render(){
   grid.innerHTML="";
@@ -278,24 +206,22 @@ function render(){
     card.className="card";
     card.dataset.id=g.id;
     card.style.setProperty("--accent",g.accent);
-
     card.innerHTML=`
+      <div class="color-strip"></div>
       <div class="toprow">
-        <input class="name-input" data-name value="${esc(g.name)}">
-        <button class="iconbtn" type="button" data-action="delete" title="このグループを削除">✕</button>
+        <input class="name-input" data-name value="${g.name}">
+        <button class="iconbtn" data-action="delete">✕</button>
       </div>
-
       <div class="row">
         <div class="btns">
-          <button class="btn minus" type="button" data-action="dec">−</button>
-          <button class="btn plus"  type="button" data-action="inc">＋</button>
+          <button class="btn minus" data-action="dec">−</button>
+          <button class="btn plus" data-action="inc">＋</button>
         </div>
-        <div class="value" data-value>${g.value}</div>
+        <div class="value">${g.value}</div>
       </div>
-
       <details class="memo">
         <summary>メモ</summary>
-        <textarea class="memo-area" data-memo placeholder="このグループのメモ（自動保存）">${esc(g.memo)}</textarea>
+        <textarea class="memo-area" data-memo>${g.memo}</textarea>
       </details>
     `;
     grid.appendChild(card);
@@ -306,84 +232,90 @@ load();
 render();
 
 document.getElementById("addGroupBtn").addEventListener("click",()=>{
-  const n=nextGroupNumber();
-  groups.push({
-    id:makeId(),
-    name:`グループ${n}`,
-    value:0,
-    memo:"",
-    accent: pickAccent()
-  });
-  // 追加後に保存・再描画
-  save();
-  render();
+  groups.push({id:makeId(),name:`グループ${groups.length+1}`,value:0,memo:"",accent:pickAccent()});
+  save();render();
 });
 
 document.getElementById("resetBtn").addEventListener("click",()=>{
-  if(confirm("初期化します。\n（グループ数・名前・数値・メモ・色が初期状態に戻ります）\nよろしいですか？")){
-    groups=defaultGroups();
-    save();
-    render();
+  if(confirm("初期化しますか？")){
+    groups=defaultGroups();save();render();
   }
 });
 
-// + / - / 削除
 document.addEventListener("click",e=>{
-  const btn=e.target.closest("button[data-action]");
+  const btn=e.target.closest("[data-action]");
   if(!btn)return;
-
   const card=btn.closest(".card");
   const g=groups.find(x=>x.id===card.dataset.id);
   if(!g)return;
-
-  const action=btn.dataset.action;
-
-  if(action==="inc"){
-    g.value++;
-    card.querySelector("[data-value]").textContent=g.value;
-    save();
-    return;
-  }
-
-  if(action==="dec"){
-    g.value=Math.max(0,g.value-1);
-    card.querySelector("[data-value]").textContent=g.value;
-    save();
-    return;
-  }
-
-  if(action==="delete"){
-    if(confirm(`「${g.name}」を削除しますか？`)){
+  if(btn.dataset.action==="inc")g.value++;
+  if(btn.dataset.action==="dec")g.value=Math.max(0,g.value-1);
+  if(btn.dataset.action==="delete"){
+    if(confirm(`「${g.name}」を削除しますか？`))
       groups=groups.filter(x=>x.id!==g.id);
-      // 削除した色が「未使用」に戻るようプールを再構築
-      rebuildAccentPool();
-      save();
-      render();
-    }
-    return;
   }
+  save();render();
 });
 
-// 名前・メモ（入力中に保存。renderしない＝カーソルが飛ばない）
 document.addEventListener("input",e=>{
   const card=e.target.closest(".card");
   if(!card)return;
-
   const g=groups.find(x=>x.id===card.dataset.id);
   if(!g)return;
-
-  if(e.target.matches("input[data-name]")){
-    g.name=e.target.value;
-    save();
-    return;
-  }
-
-  if(e.target.matches("textarea[data-memo]")){
-    g.memo=e.target.value;
-    save();
-    return;
-  }
+  if(e.target.matches("input[data-name]"))g.name=e.target.value;
+  if(e.target.matches("textarea[data-memo]"))g.memo=e.target.value;
+  save();
 });
+
+/* ===== 長押しで色変更 ===== */
+let pressTimer=null;
+let pressId=null;
+
+document.addEventListener("touchstart",e=>{
+  const strip=e.target.closest(".color-strip");
+  if(!strip)return;
+  const card=strip.closest(".card");
+  pressId=card.dataset.id;
+  pressTimer=setTimeout(()=>{
+    openColorModal(pressId);
+  },600);
+},{passive:true});
+
+document.addEventListener("touchend",()=>{
+  clearTimeout(pressTimer);
+});
+document.addEventListener("touchmove",()=>{
+  clearTimeout(pressTimer);
+});
+
+/* ===== モーダル ===== */
+const backdrop=document.getElementById("colorModalBackdrop");
+const palette=document.getElementById("palette");
+const closeBtn=document.getElementById("colorModalClose");
+
+function openColorModal(id){
+  const g=groups.find(x=>x.id===id);
+  if(!g)return;
+  palette.innerHTML="";
+  ACCENTS.forEach(color=>{
+    const b=document.createElement("button");
+    b.className="color-btn";
+    b.style.background=color;
+    if(color===g.accent)b.setAttribute("aria-selected","true");
+    b.onclick=()=>{
+      g.accent=color;
+      save();render();
+      closeColorModal();
+    };
+    palette.appendChild(b);
+  });
+  backdrop.style.display="flex";
+}
+
+function closeColorModal(){backdrop.style.display="none";}
+backdrop.onclick=e=>{if(e.target===backdrop)closeColorModal();}
+closeBtn.onclick=closeColorModal;
+
 </script>
 </body>
 </html>
