@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+
+  <!-- iPhone対応：画面幅に合わせる -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>4グループ カウンター</title>
+
+  <style>
+    /* ===== 基本フォント（iPhoneに最適化） ===== */
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   Roboto, "Noto Sans JP", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      background: #f4f6f9;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    /* ===== グリッドレイアウト ===== */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr; /* 基本は1列 */
+      gap: 12px;
+    }
+
+    /* 画面が広い場合は2列表示 */
+    @media (min-width: 520px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    /* ===== カードデザイン ===== */
+    .card {
+      background: #ffffff;
+      padding: 14px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .title {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* 数値表示 */
+    .value {
+      font-size: 28px;
+      font-weight: bold;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    /* ボタン共通デザイン */
+    button {
+      width: 50px;
+      height: 44px;
+      font-size: 22px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      background: #e5eaf2;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent; /* iPhoneの青ハイライト防止 */
+    }
+
+    button:active {
+      transform: scale(0.96); /* 押した感演出 */
+    }
+
+    .btns {
+      display: flex;
+      gap: 10px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1>4グループ カウンター</h1>
+
+  <!-- ===== グループ表示エリア ===== -->
+  <div class="grid">
+
+    <!-- ===== グループA ===== -->
+    <div class="card" data-group="A">
+      <div class="title">グループ A</div>
+      <div class="row">
+        <div class="btns">
+          <!-- data-actionで増減判定 -->
+          <button data-action="dec">−</button>
+          <button data-action="inc">＋</button>
+        </div>
+        <!-- 数値表示エリア -->
+        <div class="value" data-value>0</div>
+      </div>
+    </div>
+
+    <!-- ===== グループB ===== -->
+    <div class="card" data-group="B">
+      <div class="title">グループ B</div>
+      <div class="row">
+        <div class="btns">
+          <button data-action="dec">−</button>
+          <button data-action="inc">＋</button>
+        </div>
+        <div class="value" data-value>0</div>
+      </div>
+    </div>
+
+    <!-- ===== グループC ===== -->
+    <div class="card" data-group="C">
+      <div class="title">グループ C</div>
+      <div class="row">
+        <div class="btns">
+          <button data-action="dec">−</button>
+          <button data-action="inc">＋</button>
+        </div>
+        <div class="value" data-value>0</div>
+      </div>
+    </div>
+
+    <!-- ===== グループD ===== -->
+    <div class="card" data-group="D">
+      <div class="title">グループ D</div>
+      <div class="row">
+        <div class="btns">
+          <button data-action="dec">−</button>
+          <button data-action="inc">＋</button>
+        </div>
+        <div class="value" data-value>0</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== JavaScript処理 ===== -->
+  <script>
+
+    // グループごとの現在値を保持するオブジェクト
+    const state = {
+      A: 0,
+      B: 0,
+      C: 0,
+      D: 0
+    };
+
+    // ボタン処理用の共通関数
+    function handleEvent(e) {
+
+      // ボタン以外が押された場合は無視
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+
+      // 押されたカード（A/B/C/D）を取得
+      const card = btn.closest(".card");
+      const group = card.dataset.group;
+
+      // 押されたボタンが増加か減少か判定
+      const action = btn.dataset.action;
+
+      if (action === "inc") {
+        state[group] += 1;
+      }
+
+      if (action === "dec") {
+        state[group] -= 1;
+      }
+
+      // 表示更新
+      card.querySelector("[data-value]").textContent = state[group];
+    }
+
+    /*
+      ===== iPhone対策 =====
+      clickだけだと反応しないケースがあるため、
+      pointer / touch / click 全て拾う
+    */
+    document.addEventListener("pointerup", handleEvent, { passive: true });
+    document.addEventListener("touchend", handleEvent, { passive: true });
+    document.addEventListener("click", handleEvent);
+
+  </script>
+
+</body>
+</html>
