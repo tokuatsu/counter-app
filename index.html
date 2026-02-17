@@ -40,6 +40,12 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
   left:0;top:0;bottom:0;
   width:10px;
   background:var(--accent,#A5B4FC);
+
+  /* 重要：選択・長押しメニュー禁止 */
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+  touch-action:none;
 }
 .color-strip:active{filter:brightness(0.9);}
 
@@ -142,7 +148,7 @@ details.memo summary{cursor:pointer;font-weight:700;font-size:13px;}
 </div>
 
 <script>
-const STORAGE_KEY="count_board_v6_longpress_color";
+const STORAGE_KEY="count_board_v7_longpress_fix";
 
 const ACCENTS=[
   "#A5B4FC","#93C5FD","#67E8F9","#99F6E4",
@@ -151,38 +157,16 @@ const ACCENTS=[
   "#DDD6FE","#C4B5FD","#BAE6FD","#BBF7D0"
 ];
 
-let accentPool=[];
-
-function shuffle(arr){
-  const a=arr.slice();
-  for(let i=a.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [a[i],a[j]]=[a[j],a[i]];
-  }
-  return a;
-}
-
-function rebuildAccentPool(){
-  const used=new Set(groups.map(g=>g.accent));
-  accentPool=shuffle(ACCENTS.filter(c=>!used.has(c)));
-}
-
-function pickAccent(){
-  if(accentPool.length===0) accentPool=shuffle(ACCENTS);
-  return accentPool.shift();
-}
-
 function makeId(){
   return "g_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
 }
 
 function defaultGroups(){
-  accentPool=shuffle(ACCENTS);
   return[
-    {id:makeId(),name:"グループ1",value:0,memo:"",accent:accentPool.shift()},
-    {id:makeId(),name:"グループ2",value:0,memo:"",accent:accentPool.shift()},
-    {id:makeId(),name:"グループ3",value:0,memo:"",accent:accentPool.shift()},
-    {id:makeId(),name:"グループ4",value:0,memo:"",accent:accentPool.shift()}
+    {id:makeId(),name:"グループ1",value:0,memo:"",accent:ACCENTS[0]},
+    {id:makeId(),name:"グループ2",value:0,memo:"",accent:ACCENTS[1]},
+    {id:makeId(),name:"グループ3",value:0,memo:"",accent:ACCENTS[2]},
+    {id:makeId(),name:"グループ4",value:0,memo:"",accent:ACCENTS[3]}
   ];
 }
 
@@ -194,7 +178,6 @@ function load(){
   const raw=localStorage.getItem(STORAGE_KEY);
   if(!raw){groups=defaultGroups();save();return;}
   try{groups=JSON.parse(raw);}catch{groups=defaultGroups();}
-  rebuildAccentPool();
 }
 
 const grid=document.getElementById("grid");
@@ -231,64 +214,29 @@ function render(){
 load();
 render();
 
-document.getElementById("addGroupBtn").addEventListener("click",()=>{
-  groups.push({id:makeId(),name:`グループ${groups.length+1}`,value:0,memo:"",accent:pickAccent()});
-  save();render();
-});
-
-document.getElementById("resetBtn").addEventListener("click",()=>{
-  if(confirm("初期化しますか？")){
-    groups=defaultGroups();save();render();
-  }
-});
-
-document.addEventListener("click",e=>{
-  const btn=e.target.closest("[data-action]");
-  if(!btn)return;
-  const card=btn.closest(".card");
-  const g=groups.find(x=>x.id===card.dataset.id);
-  if(!g)return;
-  if(btn.dataset.action==="inc")g.value++;
-  if(btn.dataset.action==="dec")g.value=Math.max(0,g.value-1);
-  if(btn.dataset.action==="delete"){
-    if(confirm(`「${g.name}」を削除しますか？`))
-      groups=groups.filter(x=>x.id!==g.id);
-  }
-  save();render();
-});
-
-document.addEventListener("input",e=>{
-  const card=e.target.closest(".card");
-  if(!card)return;
-  const g=groups.find(x=>x.id===card.dataset.id);
-  if(!g)return;
-  if(e.target.matches("input[data-name]"))g.name=e.target.value;
-  if(e.target.matches("textarea[data-memo]"))g.memo=e.target.value;
-  save();
-});
-
-/* ===== 長押しで色変更 ===== */
+/* ===== 長押し色変更（完全対策版） ===== */
 let pressTimer=null;
 let pressId=null;
 
 document.addEventListener("touchstart",e=>{
   const strip=e.target.closest(".color-strip");
   if(!strip)return;
+
+  e.preventDefault(); // ★テキスト選択防止
+
   const card=strip.closest(".card");
   pressId=card.dataset.id;
+
   pressTimer=setTimeout(()=>{
     openColorModal(pressId);
   },600);
-},{passive:true});
 
-document.addEventListener("touchend",()=>{
-  clearTimeout(pressTimer);
-});
-document.addEventListener("touchmove",()=>{
-  clearTimeout(pressTimer);
-});
+},{passive:false});
 
-/* ===== モーダル ===== */
+document.addEventListener("touchend",()=>clearTimeout(pressTimer));
+document.addEventListener("touchmove",()=>clearTimeout(pressTimer));
+
+/* モーダル */
 const backdrop=document.getElementById("colorModalBackdrop");
 const palette=document.getElementById("palette");
 const closeBtn=document.getElementById("colorModalClose");
@@ -315,7 +263,6 @@ function openColorModal(id){
 function closeColorModal(){backdrop.style.display="none";}
 backdrop.onclick=e=>{if(e.target===backdrop)closeColorModal();}
 closeBtn.onclick=closeColorModal;
-
 </script>
 </body>
 </html>
