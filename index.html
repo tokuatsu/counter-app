@@ -2,201 +2,297 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-
-  <!-- iPhone対応：画面幅に合わせる -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <title>4グループ カウンター</title>
+  <title>可変グループ カウンター</title>
 
   <style>
-    /* ===== 基本フォント（iPhoneに最適化） ===== */
-    :root {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                   Roboto, "Noto Sans JP", sans-serif;
+    :root{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
+    }
+    body{margin:0;padding:16px;background:#f4f6f9;}
+    h1{font-size:18px;margin:0 0 12px;}
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin: 0 0 14px;
+    }
+    .toolbtn{
+      height:42px;
+      padding:0 14px;
+      border:0;
+      border-radius:10px;
+      background:#1f6feb;
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .toolbtn.secondary{ background:#6e7781; }
+    .toolbtn:active{ transform:scale(0.98); }
+
+    .grid{display:grid;grid-template-columns:1fr;gap:12px;}
+    @media (min-width:520px){ .grid{grid-template-columns:1fr 1fr;} }
+
+    .card{
+      background:#fff;
+      padding:14px;
+      border-radius:12px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
     }
 
-    body {
-      margin: 0;
-      padding: 16px;
-      background: #f4f6f9;
+    .toprow{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
     }
 
-    h1 {
-      font-size: 18px;
-      margin-bottom: 12px;
+    .name-input{
+      flex:1;
+      font-size:16px;
+      font-weight:800;
+      border:1px solid #e1e6ef;
+      border-radius:10px;
+      padding:8px 10px;
+      box-sizing:border-box;
+      background:#fff;
     }
 
-    /* ===== グリッドレイアウト ===== */
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr; /* 基本は1列 */
-      gap: 12px;
+    .delbtn{
+      width:44px;height:40px;
+      border:0;border-radius:10px;
+      background:#f2f2f2;
+      cursor:pointer;
+      font-weight:900;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .delbtn:active{ transform:scale(0.97); }
+
+    .row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
     }
 
-    /* 画面が広い場合は2列表示 */
-    @media (min-width: 520px) {
-      .grid {
-        grid-template-columns: 1fr 1fr;
+    .btns{display:flex;gap:10px;}
+
+    .btn{
+      width:52px;height:44px;
+      border:0;border-radius:10px;
+      background:#e5eaf2;
+      font-size:22px;
+      font-weight:900;
+      cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .btn:active{ transform:scale(0.97); }
+
+    .value{
+      font-size:28px;
+      font-weight:900;
+      min-width:70px;
+      text-align:center;
+    }
+
+    .hint{font-size:12px;color:#666;margin-top:8px;}
+  </style>
+</head>
+
+<body>
+  <h1>可変グループ カウンター</h1>
+
+  <!-- 操作ボタン -->
+  <div class="toolbar">
+    <button class="toolbtn" type="button" id="addGroupBtn">＋ グループ追加</button>
+    <button class="toolbtn secondary" type="button" id="resetBtn">初期化</button>
+  </div>
+
+  <!-- グループ表示 -->
+  <div class="grid" id="grid"></div>
+
+  <script>
+    /*
+      要件：
+      - グループ数は自由に増やせる（追加ボタン）
+      - マイナスは0未満禁止
+      - 初期化ボタン（確認あり）
+      - 名前も変更可能
+      - 変更は自動保存（localStorage）
+      - ついでに：グループ削除（確認あり）
+    */
+
+    const STORAGE_KEY = "counter_app_dynamic_v1";
+
+    // 初期グループ（初期化時にここへ戻す）
+    function defaultGroups() {
+      return [
+        { id: makeId(), name: "グループ1", value: 0 },
+        { id: makeId(), name: "グループ2", value: 0 },
+        { id: makeId(), name: "グループ3", value: 0 },
+        { id: makeId(), name: "グループ4", value: 0 },
+      ];
+    }
+
+    // グループ配列（状態）
+    let groups = [];
+
+    // できるだけ被らないID
+    function makeId() {
+      return "g_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
+    }
+
+    function load() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        groups = defaultGroups();
+        save();
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        // 形式チェック（壊れてたら初期化）
+        if (!Array.isArray(parsed)) throw new Error("not array");
+        groups = parsed.map(g => ({
+          id: String(g.id ?? makeId()),
+          name: String(g.name ?? "グループ"),
+          value: Number.isFinite(g.value) ? g.value : 0
+        }));
+      } catch (e) {
+        groups = defaultGroups();
+        save();
       }
     }
 
-    /* ===== カードデザイン ===== */
-    .card {
-      background: #ffffff;
-      padding: 14px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    // 次の「グループN」番号を作る（既存の最大+1）
+    function nextGroupNumber() {
+      let max = 0;
+      for (const g of groups) {
+        const m = String(g.name).match(/^グループ(\d+)$/);
+        if (m) max = Math.max(max, Number(m[1]));
+      }
+      return max + 1;
     }
 
-    .title {
-      font-weight: bold;
-      margin-bottom: 10px;
+    const grid = document.getElementById("grid");
+
+    function render() {
+      // DOMを作り直す（シンプル＆確実）
+      grid.innerHTML = "";
+
+      groups.forEach(g => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.dataset.id = g.id;
+
+        card.innerHTML = `
+          <div class="toprow">
+            <input class="name-input" data-name value="${escapeHtml(g.name)}" />
+            <button class="delbtn" type="button" data-action="delete" title="このグループを削除">✕</button>
+          </div>
+
+          <div class="row">
+            <div class="btns">
+              <button class="btn" type="button" data-action="dec">−</button>
+              <button class="btn" type="button" data-action="inc">＋</button>
+            </div>
+            <div class="value" data-value>${g.value}</div>
+          </div>
+
+          <div class="hint">名前変更OK / 0未満になりません</div>
+        `;
+
+        grid.appendChild(card);
+      });
     }
 
-    .row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    // HTMLのvalueに入れる用（最低限）
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
     }
 
-    /* 数値表示 */
-    .value {
-      font-size: 28px;
-      font-weight: bold;
-      min-width: 60px;
-      text-align: center;
-    }
+    // 初期ロード
+    load();
+    render();
 
-    /* ボタン共通デザイン */
-    button {
-      width: 50px;
-      height: 44px;
-      font-size: 22px;
-      font-weight: bold;
-      border: none;
-      border-radius: 10px;
-      background: #e5eaf2;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent; /* iPhoneの青ハイライト防止 */
-    }
+    // 追加ボタン
+    document.getElementById("addGroupBtn").addEventListener("click", () => {
+      const n = nextGroupNumber();
+      groups.push({ id: makeId(), name: `グループ${n}`, value: 0 });
+      save();
+      render();
+    });
 
-    button:active {
-      transform: scale(0.96); /* 押した感演出 */
-    }
+    // 初期化ボタン（確認あり）
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      const ok = confirm("初期化します。\n（グループ数・名前・数値が初期状態に戻ります）\nよろしいですか？");
+      if (!ok) return;
 
-    .btns {
-      display: flex;
-      gap: 10px;
-    }
+      groups = defaultGroups();
+      save();
+      render();
+    });
 
-  </style>
-</head>
-<body>
-
-  <h1>4グループ カウンター</h1>
-
-  <!-- ===== グループ表示エリア ===== -->
-  <div class="grid">
-
-    <!-- ===== グループA ===== -->
-    <div class="card" data-group="A">
-      <div class="title">グループ A</div>
-      <div class="row">
-        <div class="btns">
-          <!-- data-actionで増減判定 -->
-          <button data-action="dec">−</button>
-          <button data-action="inc">＋</button>
-        </div>
-        <!-- 数値表示エリア -->
-        <div class="value" data-value>0</div>
-      </div>
-    </div>
-
-    <!-- ===== グループB ===== -->
-    <div class="card" data-group="B">
-      <div class="title">グループ B</div>
-      <div class="row">
-        <div class="btns">
-          <button data-action="dec">−</button>
-          <button data-action="inc">＋</button>
-        </div>
-        <div class="value" data-value>0</div>
-      </div>
-    </div>
-
-    <!-- ===== グループC ===== -->
-    <div class="card" data-group="C">
-      <div class="title">グループ C</div>
-      <div class="row">
-        <div class="btns">
-          <button data-action="dec">−</button>
-          <button data-action="inc">＋</button>
-        </div>
-        <div class="value" data-value>0</div>
-      </div>
-    </div>
-
-    <!-- ===== グループD ===== -->
-    <div class="card" data-group="D">
-      <div class="title">グループ D</div>
-      <div class="row">
-        <div class="btns">
-          <button data-action="dec">−</button>
-          <button data-action="inc">＋</button>
-        </div>
-        <div class="value" data-value>0</div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ===== JavaScript処理 ===== -->
-  <script>
-
-    // グループごとの現在値を保持するオブジェクト
-    const state = {
-      A: 0,
-      B: 0,
-      C: 0,
-      D: 0
-    };
-
-    // ボタン処理用の共通関数
-    function handleEvent(e) {
-
-      // ボタン以外が押された場合は無視
+    // ＋／−／削除（イベント委任）
+    document.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-action]");
       if (!btn) return;
 
-      // 押されたカード（A/B/C/D）を取得
       const card = btn.closest(".card");
-      const group = card.dataset.group;
+      const id = card?.dataset.id;
+      if (!id) return;
 
-      // 押されたボタンが増加か減少か判定
+      const g = groups.find(x => x.id === id);
+      if (!g) return;
+
       const action = btn.dataset.action;
 
       if (action === "inc") {
-        state[group] += 1;
+        g.value += 1;
       }
 
       if (action === "dec") {
-        state[group] -= 1;
+        // 0未満禁止
+        g.value = Math.max(0, g.value - 1);
       }
 
-      // 表示更新
-      card.querySelector("[data-value]").textContent = state[group];
-    }
+      if (action === "delete") {
+        const ok = confirm(`「${g.name}」を削除します。よろしいですか？`);
+        if (!ok) return;
+        groups = groups.filter(x => x.id !== id);
+      }
 
-    /*
-      ===== iPhone対策 =====
-      clickだけだと反応しないケースがあるため、
-      pointer / touch / click 全て拾う
-    */
-    document.addEventListener("pointerup", handleEvent, { passive: true });
-    document.addEventListener("touchend", handleEvent, { passive: true });
-    document.addEventListener("click", handleEvent);
+      save();
+      render();
+    });
 
+    // グループ名変更（入力中に保存）
+    document.addEventListener("input", (e) => {
+      const inp = e.target.closest("input[data-name]");
+      if (!inp) return;
+
+      const card = inp.closest(".card");
+      const id = card?.dataset.id;
+      if (!id) return;
+
+      const g = groups.find(x => x.id === id);
+      if (!g) return;
+
+      g.name = inp.value;
+      save();
+      // renderはしない（入力中にカーソルが飛ぶのを防ぐ）
+    });
   </script>
-
 </body>
 </html>
