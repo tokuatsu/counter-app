@@ -17,6 +17,7 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
 .toolbtn{
   height:42px;padding:0 14px;border:0;border-radius:10px;
   background:#2563EB;color:#fff;font-weight:800;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
 }
 .toolbtn.secondary{background:#6e7781;}
 .toolbtn:active{transform:scale(0.98);}
@@ -34,7 +35,7 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
   overflow:hidden;
 }
 
-/* パステルアクセントライン */
+/* 左のアクセントライン */
 .card::before{
   content:"";
   position:absolute;
@@ -48,16 +49,18 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
   flex:1;font-size:15px;font-weight:800;
   border:1px solid #e1e6ef;border-radius:10px;
   padding:8px 10px;box-sizing:border-box;
+  background:#fff;
 }
 .name-input:focus{
   outline:none;
   border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(0,0,0,0.05);
+  box-shadow:0 0 0 3px rgba(0,0,0,0.06);
 }
 
 .iconbtn{
   width:44px;height:40px;border:0;border-radius:10px;
   background:#f2f2f2;cursor:pointer;font-weight:900;
+  -webkit-tap-highlight-color:transparent;
 }
 .iconbtn:active{transform:scale(0.97);}
 
@@ -67,15 +70,18 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
 .btn{
   width:56px;height:48px;border:0;border-radius:12px;
   font-size:24px;font-weight:900;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
 }
+.btn:active{transform:scale(0.97);}
 
 .btn.plus{
   background:var(--accent);
   color:#111;
 }
-
 .btn.minus{
   background:#e5eaf2;
+  color:#111;
 }
 
 .value{
@@ -83,6 +89,7 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
   font-weight:900;
   min-width:70px;
   text-align:center;
+  color:#111;
 }
 
 details.memo{
@@ -92,25 +99,23 @@ details.memo{
   border-radius:10px;
   padding:6px 8px;
 }
-
 details.memo summary{
   cursor:pointer;
   font-weight:700;
   font-size:13px;
 }
-
 .memo-area{
   width:100%;
   box-sizing:border-box;
   margin-top:6px;
-  min-height:60px;      /* ← 小さく */
+  min-height:60px;
   padding:8px;
   border-radius:8px;
   border:1px solid #dfe6f1;
   resize:vertical;
-  font-size:13px;       /* ← 小さく */
+  font-size:13px;
+  background:#fff;
 }
-
 .hint{font-size:11px;color:#777;margin-top:4px;}
 </style>
 </head>
@@ -126,22 +131,41 @@ details.memo summary{
 <div class="grid" id="grid"></div>
 
 <script>
-const STORAGE_KEY="count_board_v3_pastel";
+const STORAGE_KEY="count_board_v4_pastel16_no_near";
 
-// パステルセット（グレー削除）
-const ACCENTS=[
-  "#A5B4FC",
-  "#93C5FD",
-  "#86EFAC",
-  "#FDE68A",
-  "#FBCFE8",
-  "#DDD6FE",
-  "#99F6E4",
-  "#FECACA"
+/*
+  パステル16色（近い色が連続しにくいよう、色相を分散）
+  ※グレー系は入れない
+*/
+const ACCENTS = [
+  "#A5B4FC", // indigo
+  "#93C5FD", // blue
+  "#67E8F9", // sky
+  "#99F6E4", // teal
+  "#86EFAC", // green
+  "#BEF264", // lime
+  "#FDE68A", // yellow
+  "#FED7AA", // orange
+  "#FECACA", // red
+  "#FDBA74", // orange2（赤と離す）
+  "#FBCFE8", // pink
+  "#F9A8D4", // pink2
+  "#DDD6FE", // purple
+  "#C4B5FD", // violet
+  "#BAE6FD", // light blue2
+  "#BBF7D0"  // mint
 ];
 
-function pickAccent(){
-  return ACCENTS[Math.floor(Math.random()*ACCENTS.length)];
+// 配布用プール（「一巡するまで重複なし」）
+let accentPool = [];
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
 }
 
 function makeId(){
@@ -149,11 +173,13 @@ function makeId(){
 }
 
 function defaultGroups(){
-  return[
-    {id:makeId(),name:"グループ1",value:0,memo:"",accent:pickAccent()},
-    {id:makeId(),name:"グループ2",value:0,memo:"",accent:pickAccent()},
-    {id:makeId(),name:"グループ3",value:0,memo:"",accent:pickAccent()},
-    {id:makeId(),name:"グループ4",value:0,memo:"",accent:pickAccent()}
+  // 初期化時も「被りにくい配色」にしたいので、プールを作ってから配る
+  accentPool = shuffle(ACCENTS);
+  return [
+    {id:makeId(),name:"グループ1",value:0,memo:"",accent:accentPool.shift()},
+    {id:makeId(),name:"グループ2",value:0,memo:"",accent:accentPool.shift()},
+    {id:makeId(),name:"グループ3",value:0,memo:"",accent:accentPool.shift()},
+    {id:makeId(),name:"グループ4",value:0,memo:"",accent:accentPool.shift()}
   ];
 }
 
@@ -171,28 +197,79 @@ function load(){
     return;
   }
   try{
-    groups=JSON.parse(raw).map(g=>({
+    const parsed=JSON.parse(raw);
+    if(!Array.isArray(parsed)) throw new Error("not array");
+    groups=parsed.map(g=>({
       id:g.id||makeId(),
       name:g.name||"グループ",
       value:Number.isFinite(g.value)?g.value:0,
-      memo:g.memo||"",
-      accent:g.accent||pickAccent()
+      memo:(typeof g.memo==="string")?g.memo:"",
+      accent:(typeof g.accent==="string")?g.accent:null
     }));
   }catch{
     groups=defaultGroups();
+    save();
   }
+
+  // 既存グループにaccentが無ければ付与
+  for(const g of groups){
+    if(!g.accent) g.accent = pickAccent();
+  }
+
+  // 既に使っている色はプールから除外して、次の追加が被りにくいようにする
+  rebuildAccentPool();
+}
+
+/*
+  プールを再構築：
+  - 既に使っている色は除外
+  - それ以外をシャッフル
+  - 直前の色と同じなら先頭を入れ替え
+*/
+function rebuildAccentPool(){
+  const used = new Set(groups.map(g => g.accent));
+  accentPool = shuffle(ACCENTS.filter(c => !used.has(c)));
+
+  const last = groups.length ? groups[groups.length-1].accent : null;
+  if(last && accentPool.length>1 && accentPool[0]===last){
+    [accentPool[0],accentPool[1]]=[accentPool[1],accentPool[0]];
+  }
+}
+
+function pickAccent(){
+  // プールが空なら再構築（=2周目以降）
+  if(accentPool.length===0){
+    accentPool = shuffle(ACCENTS);
+
+    // 直前と同色を避ける
+    const last = groups.length ? groups[groups.length-1].accent : null;
+    if(last && accentPool.length>1 && accentPool[0]===last){
+      [accentPool[0],accentPool[1]]=[accentPool[1],accentPool[0]];
+    }
+  }
+  return accentPool.shift();
 }
 
 function nextGroupNumber(){
   let max=0;
   groups.forEach(g=>{
-    const m=g.name.match(/^グループ(\d+)$/);
+    const m=String(g.name).match(/^グループ(\d+)$/);
     if(m)max=Math.max(max,Number(m[1]));
   });
   return max+1;
 }
 
 const grid=document.getElementById("grid");
+
+// 注入対策：最低限のエスケープ（名前・メモ用）
+function esc(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
+}
 
 function render(){
   grid.innerHTML="";
@@ -204,19 +281,21 @@ function render(){
 
     card.innerHTML=`
       <div class="toprow">
-        <input class="name-input" data-name value="${g.name}">
-        <button class="iconbtn" data-action="delete">✕</button>
+        <input class="name-input" data-name value="${esc(g.name)}">
+        <button class="iconbtn" type="button" data-action="delete" title="このグループを削除">✕</button>
       </div>
+
       <div class="row">
         <div class="btns">
-          <button class="btn minus" data-action="dec">−</button>
-          <button class="btn plus" data-action="inc">＋</button>
+          <button class="btn minus" type="button" data-action="dec">−</button>
+          <button class="btn plus"  type="button" data-action="inc">＋</button>
         </div>
-        <div class="value">${g.value}</div>
+        <div class="value" data-value>${g.value}</div>
       </div>
+
       <details class="memo">
         <summary>メモ</summary>
-        <textarea class="memo-area" data-memo>${g.memo}</textarea>
+        <textarea class="memo-area" data-memo placeholder="このグループのメモ（自動保存）">${esc(g.memo)}</textarea>
       </details>
     `;
     grid.appendChild(card);
@@ -228,43 +307,82 @@ render();
 
 document.getElementById("addGroupBtn").addEventListener("click",()=>{
   const n=nextGroupNumber();
-  groups.push({id:makeId(),name:`グループ${n}`,value:0,memo:"",accent:pickAccent()});
-  save();render();
+  groups.push({
+    id:makeId(),
+    name:`グループ${n}`,
+    value:0,
+    memo:"",
+    accent: pickAccent()
+  });
+  // 追加後に保存・再描画
+  save();
+  render();
 });
 
 document.getElementById("resetBtn").addEventListener("click",()=>{
-  if(confirm("初期化します。よろしいですか？")){
+  if(confirm("初期化します。\n（グループ数・名前・数値・メモ・色が初期状態に戻ります）\nよろしいですか？")){
     groups=defaultGroups();
-    save();render();
+    save();
+    render();
   }
 });
 
+// + / - / 削除
 document.addEventListener("click",e=>{
   const btn=e.target.closest("button[data-action]");
   if(!btn)return;
+
   const card=btn.closest(".card");
   const g=groups.find(x=>x.id===card.dataset.id);
   if(!g)return;
 
-  if(btn.dataset.action==="inc")g.value++;
-  if(btn.dataset.action==="dec")g.value=Math.max(0,g.value-1);
-  if(btn.dataset.action==="delete"){
+  const action=btn.dataset.action;
+
+  if(action==="inc"){
+    g.value++;
+    card.querySelector("[data-value]").textContent=g.value;
+    save();
+    return;
+  }
+
+  if(action==="dec"){
+    g.value=Math.max(0,g.value-1);
+    card.querySelector("[data-value]").textContent=g.value;
+    save();
+    return;
+  }
+
+  if(action==="delete"){
     if(confirm(`「${g.name}」を削除しますか？`)){
       groups=groups.filter(x=>x.id!==g.id);
+      // 削除した色が「未使用」に戻るようプールを再構築
+      rebuildAccentPool();
+      save();
+      render();
     }
+    return;
   }
-  save();render();
 });
 
+// 名前・メモ（入力中に保存。renderしない＝カーソルが飛ばない）
 document.addEventListener("input",e=>{
   const card=e.target.closest(".card");
   if(!card)return;
+
   const g=groups.find(x=>x.id===card.dataset.id);
   if(!g)return;
 
-  if(e.target.matches("input[data-name]"))g.name=e.target.value;
-  if(e.target.matches("textarea[data-memo]"))g.memo=e.target.value;
-  save();
+  if(e.target.matches("input[data-name]")){
+    g.name=e.target.value;
+    save();
+    return;
+  }
+
+  if(e.target.matches("textarea[data-memo]")){
+    g.memo=e.target.value;
+    save();
+    return;
+  }
 });
 </script>
 </body>
