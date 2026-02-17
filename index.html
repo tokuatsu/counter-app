@@ -1,350 +1,271 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>カウントボード</title>
 
-  <!-- ズーム完全禁止（ピンチ＆ダブルタップ） -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+:root{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
+}
+html,body{touch-action:manipulation;}
+body{margin:0;padding:16px;background:#f4f6f9;}
+h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
 
-  <title>カウントボード</title>
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.toolbtn{
+  height:42px;padding:0 14px;border:0;border-radius:10px;
+  background:#2563EB;color:#fff;font-weight:800;cursor:pointer;
+}
+.toolbtn.secondary{background:#6e7781;}
+.toolbtn:active{transform:scale(0.98);}
 
-  <style>
-    :root{
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
-    }
-    html, body { touch-action: manipulation; }
+.grid{display:grid;grid-template-columns:1fr;gap:14px;}
+@media (min-width:520px){.grid{grid-template-columns:1fr 1fr;}}
 
-    body{margin:0;padding:16px;background:#f4f6f9;}
-    h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
+.card{
+  background:#fff;
+  padding:14px 14px 14px 18px;
+  border-radius:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  border:1px solid #e9eef6;
+  position:relative;
+  overflow:hidden;
+}
 
-    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-    .toolbtn{
-      height:42px;padding:0 14px;border:0;border-radius:10px;
-      background:#1f6feb;color:#fff;font-weight:800;cursor:pointer;
-      -webkit-tap-highlight-color:transparent;
-    }
-    .toolbtn.secondary{ background:#6e7781; }
-    .toolbtn:active{ transform:scale(0.98); }
+/* パステルアクセントライン */
+.card::before{
+  content:"";
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:10px;
+  background:var(--accent,#A5B4FC);
+}
 
-    .grid{display:grid;grid-template-columns:1fr;gap:14px;}
-    @media (min-width:520px){ .grid{grid-template-columns:1fr 1fr;} }
+.toprow{display:flex;gap:8px;margin-bottom:12px;}
+.name-input{
+  flex:1;font-size:15px;font-weight:800;
+  border:1px solid #e1e6ef;border-radius:10px;
+  padding:8px 10px;box-sizing:border-box;
+}
+.name-input:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(0,0,0,0.05);
+}
 
-    .card{
-      background:#fff;
-      padding:14px;
-      border-radius:14px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+.iconbtn{
+  width:44px;height:40px;border:0;border-radius:10px;
+  background:#f2f2f2;cursor:pointer;font-weight:900;
+}
+.iconbtn:active{transform:scale(0.97);}
 
-      /* おしゃれアクセント用 */
-      position: relative;
-      overflow: hidden;
-      border: 1px solid #e9eef6;
-      padding-left: 18px; /* 左ライン分の余白 */
-    }
+.row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;}
+.btns{display:flex;gap:10px;}
 
-    /* 左のアクセントライン（上品に少しだけ艶） */
-    .card::before{
-      content:"";
-      position:absolute;
-      left:0; top:0; bottom:0;
-      width: 10px;
-      background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(0,0,0,.08)), var(--accent, #2563EB);
-    }
+.btn{
+  width:56px;height:48px;border:0;border-radius:12px;
+  font-size:24px;font-weight:900;cursor:pointer;
+}
 
-    .toprow{display:flex;gap:8px;margin-bottom:12px;}
-    .name-input{
-      flex:1;font-size:16px;font-weight:800;
-      border:1px solid #e1e6ef;border-radius:10px;
-      padding:8px 10px;box-sizing:border-box;
-      background:#fff;
-    }
-    .name-input:focus{
-      outline:none;
-      border-color: var(--accent, #2563EB);
-      box-shadow: 0 0 0 3px rgba(37,99,235,.15);
-    }
+.btn.plus{
+  background:var(--accent);
+  color:#111;
+}
 
-    .iconbtn{
-      width:44px;height:40px;border:0;border-radius:10px;
-      background:#f2f2f2;cursor:pointer;font-weight:900;
-      -webkit-tap-highlight-color:transparent;
-    }
-    .iconbtn:active{ transform:scale(0.97); }
+.btn.minus{
+  background:#e5eaf2;
+}
 
-    .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;}
-    .btns{display:flex;gap:10px;}
+.value{
+  font-size:30px;
+  font-weight:900;
+  min-width:70px;
+  text-align:center;
+}
 
-    .btn{
-      width:56px;height:48px;border:0;border-radius:12px;
-      font-size:24px;font-weight:900;cursor:pointer;
-      -webkit-tap-highlight-color:transparent;
-      touch-action: manipulation;
-    }
-    .btn:active{ transform:scale(0.97); }
+details.memo{
+  margin-top:8px;
+  background:#fafbfc;
+  border:1px solid #e6ebf2;
+  border-radius:10px;
+  padding:6px 8px;
+}
 
-    /* ＋はアクセント色で */
-    .btn.plus{
-      background: var(--accent, #2563EB);
-      color:#fff;
-      box-shadow: 0 6px 16px rgba(0,0,0,.10);
-    }
+details.memo summary{
+  cursor:pointer;
+  font-weight:700;
+  font-size:13px;
+}
 
-    /* −は控えめ */
-    .btn.minus{
-      background:#e5eaf2;
-      color:#111;
-    }
+.memo-area{
+  width:100%;
+  box-sizing:border-box;
+  margin-top:6px;
+  min-height:60px;      /* ← 小さく */
+  padding:8px;
+  border-radius:8px;
+  border:1px solid #dfe6f1;
+  resize:vertical;
+  font-size:13px;       /* ← 小さく */
+}
 
-    .value{font-size:32px;font-weight:900;min-width:70px;text-align:center;color:#111;}
-
-    details.memo{
-      margin-top:10px;
-      background:#fafbfc;
-      border:1px solid #e6ebf2;
-      border-radius:10px;
-      padding:8px 10px;
-    }
-    details.memo summary{cursor:pointer;font-weight:800;}
-    .memo-area{
-      width:100%;box-sizing:border-box;
-      margin-top:8px;min-height:90px;
-      padding:10px;border-radius:10px;border:1px solid #dfe6f1;
-      resize:vertical;font-size:14px;background:#fff;
-    }
-    .hint{font-size:12px;color:#666;margin-top:6px;}
-  </style>
+.hint{font-size:11px;color:#777;margin-top:4px;}
+</style>
 </head>
 
 <body>
-  <h1>カウントボード</h1>
+<h1>カウントボード</h1>
 
-  <div class="toolbar">
-    <button class="toolbtn" type="button" id="addGroupBtn">＋ グループ追加</button>
-    <button class="toolbtn secondary" type="button" id="resetBtn">初期化</button>
-  </div>
+<div class="toolbar">
+  <button class="toolbtn" id="addGroupBtn">＋ グループ追加</button>
+  <button class="toolbtn secondary" id="resetBtn">初期化</button>
+</div>
 
-  <div class="grid" id="grid"></div>
+<div class="grid" id="grid"></div>
 
-  <script>
-    /*
-      機能
-      - グループ数：自由に追加
-      - 値：0未満禁止
-      - 初期化：確認あり（グループ数/名前/値/メモ/色も初期状態へ）
-      - グループ削除：確認あり
-      - グループ名編集
-      - グループごとメモ：折りたたみ、保存あり
-      - 色：おしゃれ配色セットからランダム（グループごとに固定して保存）
-    */
+<script>
+const STORAGE_KEY="count_board_v3_pastel";
 
-    const STORAGE_KEY = "count_board_v2_random_accent";
+// パステルセット（グレー削除）
+const ACCENTS=[
+  "#A5B4FC",
+  "#93C5FD",
+  "#86EFAC",
+  "#FDE68A",
+  "#FBCFE8",
+  "#DDD6FE",
+  "#99F6E4",
+  "#FECACA"
+];
 
-    // おしゃれ系アクセント（事故りにくいセット）
-    const ACCENTS = [
-      "#2563EB", // blue
-      "#16A34A", // green
-      "#F59E0B", // amber
-      "#EF4444", // red
-      "#8B5CF6", // purple
-      "#06B6D4", // cyan
-      "#EC4899", // pink
-      "#64748B"  // slate
-    ];
+function pickAccent(){
+  return ACCENTS[Math.floor(Math.random()*ACCENTS.length)];
+}
 
-    function pickAccent() {
-      return ACCENTS[Math.floor(Math.random() * ACCENTS.length)];
+function makeId(){
+  return "g_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
+}
+
+function defaultGroups(){
+  return[
+    {id:makeId(),name:"グループ1",value:0,memo:"",accent:pickAccent()},
+    {id:makeId(),name:"グループ2",value:0,memo:"",accent:pickAccent()},
+    {id:makeId(),name:"グループ3",value:0,memo:"",accent:pickAccent()},
+    {id:makeId(),name:"グループ4",value:0,memo:"",accent:pickAccent()}
+  ];
+}
+
+let groups=[];
+
+function save(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(groups));
+}
+
+function load(){
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if(!raw){
+    groups=defaultGroups();
+    save();
+    return;
+  }
+  try{
+    groups=JSON.parse(raw).map(g=>({
+      id:g.id||makeId(),
+      name:g.name||"グループ",
+      value:Number.isFinite(g.value)?g.value:0,
+      memo:g.memo||"",
+      accent:g.accent||pickAccent()
+    }));
+  }catch{
+    groups=defaultGroups();
+  }
+}
+
+function nextGroupNumber(){
+  let max=0;
+  groups.forEach(g=>{
+    const m=g.name.match(/^グループ(\d+)$/);
+    if(m)max=Math.max(max,Number(m[1]));
+  });
+  return max+1;
+}
+
+const grid=document.getElementById("grid");
+
+function render(){
+  grid.innerHTML="";
+  groups.forEach(g=>{
+    const card=document.createElement("div");
+    card.className="card";
+    card.dataset.id=g.id;
+    card.style.setProperty("--accent",g.accent);
+
+    card.innerHTML=`
+      <div class="toprow">
+        <input class="name-input" data-name value="${g.name}">
+        <button class="iconbtn" data-action="delete">✕</button>
+      </div>
+      <div class="row">
+        <div class="btns">
+          <button class="btn minus" data-action="dec">−</button>
+          <button class="btn plus" data-action="inc">＋</button>
+        </div>
+        <div class="value">${g.value}</div>
+      </div>
+      <details class="memo">
+        <summary>メモ</summary>
+        <textarea class="memo-area" data-memo>${g.memo}</textarea>
+      </details>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+load();
+render();
+
+document.getElementById("addGroupBtn").addEventListener("click",()=>{
+  const n=nextGroupNumber();
+  groups.push({id:makeId(),name:`グループ${n}`,value:0,memo:"",accent:pickAccent()});
+  save();render();
+});
+
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  if(confirm("初期化します。よろしいですか？")){
+    groups=defaultGroups();
+    save();render();
+  }
+});
+
+document.addEventListener("click",e=>{
+  const btn=e.target.closest("button[data-action]");
+  if(!btn)return;
+  const card=btn.closest(".card");
+  const g=groups.find(x=>x.id===card.dataset.id);
+  if(!g)return;
+
+  if(btn.dataset.action==="inc")g.value++;
+  if(btn.dataset.action==="dec")g.value=Math.max(0,g.value-1);
+  if(btn.dataset.action==="delete"){
+    if(confirm(`「${g.name}」を削除しますか？`)){
+      groups=groups.filter(x=>x.id!==g.id);
     }
+  }
+  save();render();
+});
 
-    function makeId(){
-      return "g_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8);
-    }
+document.addEventListener("input",e=>{
+  const card=e.target.closest(".card");
+  if(!card)return;
+  const g=groups.find(x=>x.id===card.dataset.id);
+  if(!g)return;
 
-    // 初期グループ（初期化時にここへ戻る）
-    function defaultGroups(){
-      return [
-        { id: makeId(), name:"グループ1", value:0, memo:"", accent: pickAccent() },
-        { id: makeId(), name:"グループ2", value:0, memo:"", accent: pickAccent() },
-        { id: makeId(), name:"グループ3", value:0, memo:"", accent: pickAccent() },
-        { id: makeId(), name:"グループ4", value:0, memo:"", accent: pickAccent() }
-      ];
-    }
-
-    let groups = [];
-
-    function save(){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
-    }
-
-    function load(){
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw){
-        groups = defaultGroups();
-        save();
-        return;
-      }
-      try{
-        const parsed = JSON.parse(raw);
-        if(!Array.isArray(parsed)) throw new Error("not array");
-
-        // 古い保存データでも落ちないように補正
-        groups = parsed.map(g => ({
-          id: String(g.id ?? makeId()),
-          name: String(g.name ?? "グループ"),
-          value: Number.isFinite(g.value) ? g.value : 0,
-          memo: (typeof g.memo === "string") ? g.memo : "",
-          accent: (typeof g.accent === "string") ? g.accent : pickAccent()
-        }));
-      }catch{
-        groups = defaultGroups();
-        save();
-      }
-    }
-
-    function nextGroupNumber(){
-      let max = 0;
-      groups.forEach(g=>{
-        const m = String(g.name).match(/^グループ(\d+)$/);
-        if(m) max = Math.max(max, Number(m[1]));
-      });
-      return max+1;
-    }
-
-    const grid = document.getElementById("grid");
-
-    // HTML注入の最低限エスケープ（名前用）
-    function esc(s){
-      return String(s)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#39;");
-    }
-
-    function render(){
-      grid.innerHTML = "";
-
-      groups.forEach(g=>{
-        const card = document.createElement("div");
-        card.className = "card";
-        card.dataset.id = g.id;
-
-        // グループ固有のアクセント色をCSS変数に設定
-        card.style.setProperty("--accent", g.accent);
-
-        card.innerHTML = `
-          <div class="toprow">
-            <input class="name-input" data-name value="${esc(g.name)}">
-            <button class="iconbtn" type="button" data-action="delete" title="このグループを削除">✕</button>
-          </div>
-
-          <div class="row">
-            <div class="btns">
-              <button class="btn minus" type="button" data-action="dec">−</button>
-              <button class="btn plus"  type="button" data-action="inc">＋</button>
-            </div>
-            <div class="value" data-value>${g.value}</div>
-          </div>
-
-          <details class="memo">
-            <summary>メモ</summary>
-            <textarea class="memo-area" data-memo placeholder="このグループのメモを入力（自動保存）">${esc(g.memo)}</textarea>
-            <div class="hint">※メモは端末内に保存されます</div>
-          </details>
-        `;
-
-        grid.appendChild(card);
-      });
-    }
-
-    // 初期ロード
-    load();
-    render();
-
-    // グループ追加
-    document.getElementById("addGroupBtn").addEventListener("click", () => {
-      const n = nextGroupNumber();
-      groups.push({
-        id: makeId(),
-        name: `グループ${n}`,
-        value: 0,
-        memo: "",
-        accent: pickAccent() // ランダム（ただしセットから）
-      });
-      save();
-      render();
-    });
-
-    // 初期化（確認あり）
-    document.getElementById("resetBtn").addEventListener("click", () => {
-      const ok = confirm("初期化します。\n（グループ数・名前・数値・メモ・色が初期状態に戻ります）\nよろしいですか？");
-      if(!ok) return;
-
-      groups = defaultGroups();
-      save();
-      render();
-    });
-
-    // + / - / 削除（イベント委任：clickだけで1回動作）
-    document.addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-action]");
-      if(!btn) return;
-
-      const card = btn.closest(".card");
-      const id = card?.dataset.id;
-      if(!id) return;
-
-      const g = groups.find(x => x.id === id);
-      if(!g) return;
-
-      const action = btn.dataset.action;
-
-      if(action === "inc"){
-        g.value += 1;
-        card.querySelector("[data-value]").textContent = g.value;
-        save();
-        return;
-      }
-
-      if(action === "dec"){
-        // 0未満禁止
-        g.value = Math.max(0, g.value - 1);
-        card.querySelector("[data-value]").textContent = g.value;
-        save();
-        return;
-      }
-
-      if(action === "delete"){
-        const ok = confirm(`「${g.name}」を削除します。よろしいですか？`);
-        if(!ok) return;
-        groups = groups.filter(x => x.id !== id);
-        save();
-        render();
-        return;
-      }
-    });
-
-    // グループ名・メモ変更（入力中に保存。renderしない＝カーソルが飛ばない）
-    document.addEventListener("input", (e) => {
-      const card = e.target.closest(".card");
-      if(!card) return;
-
-      const id = card.dataset.id;
-      const g = groups.find(x => x.id === id);
-      if(!g) return;
-
-      if(e.target.matches("input[data-name]")){
-        g.name = e.target.value;
-        save();
-        return;
-      }
-
-      if(e.target.matches("textarea[data-memo]")){
-        g.memo = e.target.value;
-        save();
-        return;
-      }
-    });
-  </script>
+  if(e.target.matches("input[data-name]"))g.name=e.target.value;
+  if(e.target.matches("textarea[data-memo]"))g.memo=e.target.value;
+  save();
+});
+</script>
 </body>
 </html>
