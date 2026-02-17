@@ -11,22 +11,13 @@
 }
 html,body{touch-action:manipulation;}
 body{margin:0;padding:16px;background:#f4f6f9;}
-h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
+h1{font-size:20px;margin:0 0 14px;font-weight:900;}
 
-.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-.toolbtn{
-  height:42px;padding:0 14px;border:0;border-radius:10px;
-  background:#2563EB;color:#fff;font-weight:800;cursor:pointer;
-}
-.toolbtn.secondary{background:#6e7781;}
-.toolbtn:active{transform:scale(0.98);}
-
-.grid{display:grid;grid-template-columns:1fr;gap:14px;}
-@media (min-width:520px){.grid{grid-template-columns:1fr 1fr;}}
+.grid{display:grid;gap:14px;}
 
 .card{
   background:#fff;
-  padding:14px 14px 14px 18px;
+  padding:14px 14px 14px 22px;
   border-radius:14px;
   box-shadow:0 2px 8px rgba(0,0,0,0.08);
   border:1px solid #e9eef6;
@@ -34,121 +25,67 @@ h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
   overflow:hidden;
 }
 
-/* ===== タップ可能な縦帯 ===== */
+/* ===== 見た目10px / 判定24px ===== */
 .color-strip{
   position:absolute;
-  left:0;top:0;bottom:0;
-  width:10px;
-  background:var(--accent,#A5B4FC);
-
-  /* 重要：選択・長押しメニュー禁止 */
+  left:0;
+  top:0;
+  bottom:0;
+  width:24px;               /* 判定エリア広く */
+  background:transparent;
   -webkit-user-select:none;
   user-select:none;
   -webkit-touch-callout:none;
   touch-action:none;
 }
-.color-strip:active{filter:brightness(0.9);}
 
-.toprow{display:flex;gap:8px;margin-bottom:12px;}
-.name-input{
-  flex:1;font-size:15px;font-weight:800;
-  border:1px solid #e1e6ef;border-radius:10px;
-  padding:8px 10px;box-sizing:border-box;
+/* 見た目部分 */
+.color-strip::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:10px;               /* 見た目は10px */
+  background:var(--accent,#A5B4FC);
 }
-.name-input:focus{
-  outline:none;
-  border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(0,0,0,0.06);
+.color-strip:active::before{
+  filter:brightness(0.9);
 }
 
-.iconbtn{
-  width:44px;height:40px;border:0;border-radius:10px;
-  background:#f2f2f2;cursor:pointer;font-weight:900;
-}
-.iconbtn:active{transform:scale(0.97);}
-
-.row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;}
-.btns{display:flex;gap:10px;}
-
-.btn{
-  width:56px;height:48px;border:0;border-radius:12px;
-  font-size:24px;font-weight:900;cursor:pointer;
-}
-.btn:active{transform:scale(0.97);}
+.row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.btn{width:56px;height:48px;border:0;border-radius:12px;font-size:24px;font-weight:900;}
 .btn.plus{background:var(--accent);color:#111;}
 .btn.minus{background:#e5eaf2;}
+.value{font-size:30px;font-weight:900;}
 
-.value{font-size:30px;font-weight:900;min-width:70px;text-align:center;}
-
-details.memo{
-  margin-top:8px;background:#fafbfc;
-  border:1px solid #e6ebf2;border-radius:10px;padding:6px 8px;
-}
-details.memo summary{cursor:pointer;font-weight:700;font-size:13px;}
-.memo-area{
-  width:100%;box-sizing:border-box;margin-top:6px;
-  min-height:60px;padding:8px;border-radius:8px;
-  border:1px solid #dfe6f1;resize:vertical;font-size:13px;
-}
-
-/* ===== モーダル ===== */
 .modal-backdrop{
   position:fixed;inset:0;background:rgba(0,0,0,0.35);
   display:none;align-items:flex-end;justify-content:center;
   padding:12px;z-index:9999;
 }
 .modal{
-  width:min(520px,100%);background:#fff;border-radius:16px;
-  box-shadow:0 12px 40px rgba(0,0,0,0.25);overflow:hidden;
+  width:min(520px,100%);
+  background:#fff;border-radius:16px;
+  box-shadow:0 12px 40px rgba(0,0,0,0.25);
 }
-.modal-header{
-  padding:12px 14px;display:flex;justify-content:space-between;
-  border-bottom:1px solid #eef2f7;
-}
-.modal-title{font-weight:900;}
-.modal-close{
-  border:0;background:#f2f2f2;border-radius:10px;
-  width:44px;height:36px;font-weight:900;cursor:pointer;
-}
-.modal-body{padding:12px 14px 14px;}
-.palette{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
-.color-btn{
-  height:46px;border:1px solid #e6ebf2;border-radius:12px;
-  cursor:pointer;position:relative;
-}
-.color-btn:active{transform:scale(0.98);}
-.color-btn[aria-selected="true"]::after{
-  content:"✓";position:absolute;right:10px;top:10px;
-  font-weight:900;background:rgba(255,255,255,0.7);
-  border-radius:999px;padding:2px 8px;
-}
+.palette{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px;}
+.color-btn{height:46px;border-radius:12px;border:1px solid #eee;}
 </style>
 </head>
 
 <body>
 <h1>カウントボード</h1>
-
-<div class="toolbar">
-  <button class="toolbtn" id="addGroupBtn">＋ グループ追加</button>
-  <button class="toolbtn secondary" id="resetBtn">初期化</button>
-</div>
-
 <div class="grid" id="grid"></div>
 
-<div class="modal-backdrop" id="colorModalBackdrop">
+<div class="modal-backdrop" id="modal">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">色を選択</div>
-      <button class="modal-close" id="colorModalClose">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="palette" id="palette"></div>
-    </div>
+    <div class="palette" id="palette"></div>
   </div>
 </div>
 
 <script>
-const STORAGE_KEY="count_board_v7_longpress_fix";
+const STORAGE_KEY="count_board_v8_stable_longpress";
 
 const ACCENTS=[
   "#A5B4FC","#93C5FD","#67E8F9","#99F6E4",
@@ -157,23 +94,22 @@ const ACCENTS=[
   "#DDD6FE","#C4B5FD","#BAE6FD","#BBF7D0"
 ];
 
+let groups=[];
+
 function makeId(){
   return "g_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
 }
 
 function defaultGroups(){
   return[
-    {id:makeId(),name:"グループ1",value:0,memo:"",accent:ACCENTS[0]},
-    {id:makeId(),name:"グループ2",value:0,memo:"",accent:ACCENTS[1]},
-    {id:makeId(),name:"グループ3",value:0,memo:"",accent:ACCENTS[2]},
-    {id:makeId(),name:"グループ4",value:0,memo:"",accent:ACCENTS[3]}
+    {id:makeId(),name:"グループ1",value:0,accent:ACCENTS[0]},
+    {id:makeId(),name:"グループ2",value:0,accent:ACCENTS[1]},
+    {id:makeId(),name:"グループ3",value:0,accent:ACCENTS[2]},
+    {id:makeId(),name:"グループ4",value:0,accent:ACCENTS[3]}
   ];
 }
 
-let groups=[];
-
 function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(groups));}
-
 function load(){
   const raw=localStorage.getItem(STORAGE_KEY);
   if(!raw){groups=defaultGroups();save();return;}
@@ -181,6 +117,8 @@ function load(){
 }
 
 const grid=document.getElementById("grid");
+const modal=document.getElementById("modal");
+const palette=document.getElementById("palette");
 
 function render(){
   grid.innerHTML="";
@@ -189,57 +127,43 @@ function render(){
     card.className="card";
     card.dataset.id=g.id;
     card.style.setProperty("--accent",g.accent);
+
     card.innerHTML=`
       <div class="color-strip"></div>
-      <div class="toprow">
-        <input class="name-input" data-name value="${g.name}">
-        <button class="iconbtn" data-action="delete">✕</button>
-      </div>
       <div class="row">
-        <div class="btns">
-          <button class="btn minus" data-action="dec">−</button>
-          <button class="btn plus" data-action="inc">＋</button>
+        <div>
+          <button class="btn minus">−</button>
+          <button class="btn plus">＋</button>
         </div>
         <div class="value">${g.value}</div>
       </div>
-      <details class="memo">
-        <summary>メモ</summary>
-        <textarea class="memo-area" data-memo>${g.memo}</textarea>
-      </details>
     `;
+
+    // ===== 長押しは strip に直接付ける =====
+    const strip=card.querySelector(".color-strip");
+    let timer=null;
+
+    strip.addEventListener("touchstart",e=>{
+      e.preventDefault();
+      timer=setTimeout(()=>{
+        openColorModal(g.id);
+      },600);
+    },{passive:false});
+
+    strip.addEventListener("touchend",()=>clearTimeout(timer));
+    strip.addEventListener("touchmove",()=>clearTimeout(timer));
+
+    // ボタン処理
+    card.querySelector(".plus").onclick=()=>{
+      g.value++; save(); render();
+    };
+    card.querySelector(".minus").onclick=()=>{
+      g.value=Math.max(0,g.value-1); save(); render();
+    };
+
     grid.appendChild(card);
   });
 }
-
-load();
-render();
-
-/* ===== 長押し色変更（完全対策版） ===== */
-let pressTimer=null;
-let pressId=null;
-
-document.addEventListener("touchstart",e=>{
-  const strip=e.target.closest(".color-strip");
-  if(!strip)return;
-
-  e.preventDefault(); // ★テキスト選択防止
-
-  const card=strip.closest(".card");
-  pressId=card.dataset.id;
-
-  pressTimer=setTimeout(()=>{
-    openColorModal(pressId);
-  },600);
-
-},{passive:false});
-
-document.addEventListener("touchend",()=>clearTimeout(pressTimer));
-document.addEventListener("touchmove",()=>clearTimeout(pressTimer));
-
-/* モーダル */
-const backdrop=document.getElementById("colorModalBackdrop");
-const palette=document.getElementById("palette");
-const closeBtn=document.getElementById("colorModalClose");
 
 function openColorModal(id){
   const g=groups.find(x=>x.id===id);
@@ -249,20 +173,22 @@ function openColorModal(id){
     const b=document.createElement("button");
     b.className="color-btn";
     b.style.background=color;
-    if(color===g.accent)b.setAttribute("aria-selected","true");
     b.onclick=()=>{
       g.accent=color;
-      save();render();
-      closeColorModal();
+      save(); render();
+      modal.style.display="none";
     };
     palette.appendChild(b);
   });
-  backdrop.style.display="flex";
+  modal.style.display="flex";
 }
 
-function closeColorModal(){backdrop.style.display="none";}
-backdrop.onclick=e=>{if(e.target===backdrop)closeColorModal();}
-closeBtn.onclick=closeColorModal;
+modal.onclick=e=>{
+  if(e.target===modal) modal.style.display="none";
+};
+
+load();
+render();
 </script>
 </body>
 </html>
