@@ -1,193 +1,480 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>カウントボード</title>
+  <meta charset="utf-8">
+  <!-- ズーム禁止（ピンチ/ダブルタップ） -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>カウントボード</title>
 
-<style>
-:root{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
-}
-html,body{touch-action:manipulation;}
-body{margin:0;padding:16px;background:#f4f6f9;}
-h1{font-size:20px;margin:0 0 14px;font-weight:900;}
+  <style>
+    :root{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;
+    }
+    html,body{touch-action:manipulation;}
+    body{margin:0;padding:16px;background:#f4f6f9;}
+    h1{font-size:20px;margin:0 0 14px;font-weight:900;letter-spacing:1px;}
 
-.grid{display:grid;gap:14px;}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+    .toolbtn{
+      height:42px;padding:0 14px;border:0;border-radius:10px;
+      background:#2563EB;color:#fff;font-weight:800;cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .toolbtn.secondary{background:#6e7781;}
+    .toolbtn:active{transform:scale(0.98);}
 
-.card{
-  background:#fff;
-  padding:14px 14px 14px 22px;
-  border-radius:14px;
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
-  border:1px solid #e9eef6;
-  position:relative;
-  overflow:hidden;
-}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px;}
+    @media (min-width:520px){.grid{grid-template-columns:1fr 1fr;}}
 
-/* ===== 見た目10px / 判定24px ===== */
-.color-strip{
-  position:absolute;
-  left:0;
-  top:0;
-  bottom:0;
-  width:24px;               /* 判定エリア広く */
-  background:transparent;
-  -webkit-user-select:none;
-  user-select:none;
-  -webkit-touch-callout:none;
-  touch-action:none;
-}
+    .card{
+      background:#fff;
+      padding:14px 14px 14px 22px; /* 左の判定エリア分 */
+      border-radius:14px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.08);
+      border:1px solid #e9eef6;
+      position:relative;
+      overflow:hidden;
+    }
 
-/* 見た目部分 */
-.color-strip::before{
-  content:"";
-  position:absolute;
-  left:0;
-  top:0;
-  bottom:0;
-  width:10px;               /* 見た目は10px */
-  background:var(--accent,#A5B4FC);
-}
-.color-strip:active::before{
-  filter:brightness(0.9);
-}
+    /* ===== 縦帯：見た目10px / 判定24px（長押し安定版） ===== */
+    .color-strip{
+      position:absolute;
+      left:0;top:0;bottom:0;
+      width:24px;                 /* 判定エリア広く */
+      background:transparent;
 
-.row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
-.btn{width:56px;height:48px;border:0;border-radius:12px;font-size:24px;font-weight:900;}
-.btn.plus{background:var(--accent);color:#111;}
-.btn.minus{background:#e5eaf2;}
-.value{font-size:30px;font-weight:900;}
+      /* 長押しのテキスト選択・メニューを抑止 */
+      -webkit-user-select:none;
+      user-select:none;
+      -webkit-touch-callout:none;
+      touch-action:none;
 
-.modal-backdrop{
-  position:fixed;inset:0;background:rgba(0,0,0,0.35);
-  display:none;align-items:flex-end;justify-content:center;
-  padding:12px;z-index:9999;
-}
-.modal{
-  width:min(520px,100%);
-  background:#fff;border-radius:16px;
-  box-shadow:0 12px 40px rgba(0,0,0,0.25);
-}
-.palette{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px;}
-.color-btn{height:46px;border-radius:12px;border:1px solid #eee;}
-</style>
+      -webkit-tap-highlight-color:transparent;
+    }
+    .color-strip::before{
+      content:"";
+      position:absolute;
+      left:0;top:0;bottom:0;
+      width:10px;                 /* 見た目は細いまま */
+      background:var(--accent,#A5B4FC);
+    }
+    .color-strip:active::before{ filter:brightness(0.92); }
+
+    .toprow{display:flex;gap:8px;margin-bottom:12px;align-items:center;}
+    .name-input{
+      flex:1;font-size:15px;font-weight:800;
+      border:1px solid #e1e6ef;border-radius:10px;
+      padding:8px 10px;box-sizing:border-box;
+      background:#fff;
+    }
+    .name-input:focus{
+      outline:none;
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(0,0,0,0.06);
+    }
+    .iconbtn{
+      width:44px;height:40px;border:0;border-radius:10px;
+      background:#f2f2f2;cursor:pointer;font-weight:900;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .iconbtn:active{transform:scale(0.97);}
+
+    .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;}
+    .btns{display:flex;gap:10px;}
+    .btn{
+      width:56px;height:48px;border:0;border-radius:12px;
+      font-size:24px;font-weight:900;cursor:pointer;
+      -webkit-tap-highlight-color:transparent;
+      touch-action:manipulation;
+      color:#111;
+    }
+    .btn:active{transform:scale(0.97);}
+    .btn.plus{background:var(--accent);}
+    .btn.minus{background:#e5eaf2;}
+
+    .value{font-size:30px;font-weight:900;min-width:70px;text-align:center;color:#111;}
+
+    details.memo{
+      margin-top:8px;background:#fafbfc;
+      border:1px solid #e6ebf2;border-radius:10px;padding:6px 8px;
+    }
+    details.memo summary{cursor:pointer;font-weight:700;font-size:13px;}
+    .memo-area{
+      width:100%;box-sizing:border-box;margin-top:6px;
+      min-height:60px;padding:8px;border-radius:8px;
+      border:1px solid #dfe6f1;resize:vertical;font-size:13px;
+      background:#fff;
+    }
+
+    /* ===== モーダル（色選択） ===== */
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,0.35);
+      display:none;align-items:flex-end;justify-content:center;
+      padding:12px;z-index:9999;
+    }
+    .modal{
+      width:min(520px,100%);background:#fff;border-radius:16px;
+      box-shadow:0 12px 40px rgba(0,0,0,0.25);overflow:hidden;
+    }
+    .modal-header{
+      padding:12px 14px;display:flex;justify-content:space-between;align-items:center;
+      border-bottom:1px solid #eef2f7;
+    }
+    .modal-title{font-weight:900;}
+    .modal-close{
+      border:0;background:#f2f2f2;border-radius:10px;
+      width:44px;height:36px;font-weight:900;cursor:pointer;
+    }
+    .modal-body{padding:12px 14px 14px;}
+    .palette{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+    .color-btn{
+      height:46px;border:1px solid #e6ebf2;border-radius:12px;
+      cursor:pointer;position:relative;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .color-btn:active{transform:scale(0.98);}
+    .color-btn[aria-selected="true"]::after{
+      content:"✓";position:absolute;right:10px;top:10px;
+      font-weight:900;background:rgba(255,255,255,0.75);
+      border-radius:999px;padding:2px 8px;
+      border:1px solid rgba(0,0,0,0.06);
+    }
+    .modal-hint{margin-top:10px;font-size:12px;color:#666;}
+  </style>
 </head>
 
 <body>
-<h1>カウントボード</h1>
-<div class="grid" id="grid"></div>
+  <h1>カウントボード</h1>
 
-<div class="modal-backdrop" id="modal">
-  <div class="modal">
-    <div class="palette" id="palette"></div>
+  <div class="toolbar">
+    <button class="toolbtn" type="button" id="addGroupBtn">＋ グループ追加</button>
+    <button class="toolbtn secondary" type="button" id="resetBtn">初期化</button>
   </div>
-</div>
+
+  <div class="grid" id="grid"></div>
+
+  <!-- 色選択モーダル -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <div class="modal-title">色を選択</div>
+        <button class="modal-close" id="modalClose" type="button">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="palette" id="palette"></div>
+        <div class="modal-hint">※縦帯を「長押し」すると色変更できます（グループごとに保存）</div>
+      </div>
+    </div>
+  </div>
 
 <script>
-const STORAGE_KEY="count_board_v8_stable_longpress";
+/* =========================
+   保存キー
+========================= */
+const STORAGE_KEY = "count_board_final_longpress";
 
-const ACCENTS=[
+/* =========================
+   16色（パステル・グレー無し）
+========================= */
+const ACCENTS = [
   "#A5B4FC","#93C5FD","#67E8F9","#99F6E4",
   "#86EFAC","#BEF264","#FDE68A","#FED7AA",
   "#FECACA","#FDBA74","#FBCFE8","#F9A8D4",
   "#DDD6FE","#C4B5FD","#BAE6FD","#BBF7D0"
 ];
 
-let groups=[];
-
+/* =========================
+   便利関数
+========================= */
 function makeId(){
-  return "g_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);
+  return "g_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8);
+}
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function esc(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#39;");
 }
 
+/* =========================
+   色の配布（被りにくい）
+   - 既存で使ってる色は除外したプールから配る
+   - プールが空なら全色シャッフル（2周目）
+========================= */
+let accentPool = [];
+function rebuildAccentPool(){
+  const used = new Set(groups.map(g => g.accent));
+  const candidates = ACCENTS.filter(c => !used.has(c));
+  accentPool = shuffle(candidates.length ? candidates : ACCENTS);
+}
+function pickAccent(){
+  if(accentPool.length === 0) rebuildAccentPool();
+  return accentPool.shift();
+}
+
+/* =========================
+   データ構造
+========================= */
+let groups = [];
+
 function defaultGroups(){
-  return[
-    {id:makeId(),name:"グループ1",value:0,accent:ACCENTS[0]},
-    {id:makeId(),name:"グループ2",value:0,accent:ACCENTS[1]},
-    {id:makeId(),name:"グループ3",value:0,accent:ACCENTS[2]},
-    {id:makeId(),name:"グループ4",value:0,accent:ACCENTS[3]}
+  accentPool = shuffle(ACCENTS);
+  return [
+    { id: makeId(), name: "グループ1", value: 0, memo: "", accent: accentPool.shift() },
+    { id: makeId(), name: "グループ2", value: 0, memo: "", accent: accentPool.shift() },
+    { id: makeId(), name: "グループ3", value: 0, memo: "", accent: accentPool.shift() },
+    { id: makeId(), name: "グループ4", value: 0, memo: "", accent: accentPool.shift() },
   ];
 }
 
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(groups));}
-function load(){
-  const raw=localStorage.getItem(STORAGE_KEY);
-  if(!raw){groups=defaultGroups();save();return;}
-  try{groups=JSON.parse(raw);}catch{groups=defaultGroups();}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
 }
 
-const grid=document.getElementById("grid");
-const modal=document.getElementById("modal");
-const palette=document.getElementById("palette");
+function load(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw){
+    groups = defaultGroups();
+    save();
+    return;
+  }
+  try{
+    const parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed)) throw new Error("not array");
+    groups = parsed.map(g => ({
+      id: String(g.id ?? makeId()),
+      name: String(g.name ?? "グループ"),
+      value: Number.isFinite(g.value) ? g.value : 0,
+      memo: typeof g.memo === "string" ? g.memo : "",
+      accent: (typeof g.accent === "string" && ACCENTS.includes(g.accent)) ? g.accent : null
+    }));
+  }catch{
+    groups = defaultGroups();
+    save();
+    return;
+  }
 
+  // accentが無いものがあれば補完
+  rebuildAccentPool();
+  for(const g of groups){
+    if(!g.accent) g.accent = pickAccent();
+  }
+  rebuildAccentPool();
+}
+
+/* =========================
+   UI
+========================= */
+const grid = document.getElementById("grid");
+
+// グループ名「グループN」採番
+function nextGroupNumber(){
+  let max = 0;
+  for(const g of groups){
+    const m = String(g.name).match(/^グループ(\d+)$/);
+    if(m) max = Math.max(max, Number(m[1]));
+  }
+  return max + 1;
+}
+
+/* ===== 色選択モーダル ===== */
+const modal = document.getElementById("modal");
+const palette = document.getElementById("palette");
+const modalClose = document.getElementById("modalClose");
+let activeGroupId = null;
+
+function openColorModal(groupId){
+  activeGroupId = groupId;
+  const g = groups.find(x => x.id === groupId);
+  if(!g) return;
+
+  palette.innerHTML = "";
+  for(const color of ACCENTS){
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "color-btn";
+    b.style.background = color;
+    b.setAttribute("aria-selected", color === g.accent ? "true" : "false");
+    b.addEventListener("click", () => {
+      g.accent = color;
+      rebuildAccentPool(); // 次の追加で被りにくいように
+      save();
+      render();
+      closeColorModal();
+    });
+    palette.appendChild(b);
+  }
+
+  modal.style.display = "flex";
+}
+
+function closeColorModal(){
+  modal.style.display = "none";
+  activeGroupId = null;
+}
+
+modal.addEventListener("click", (e) => {
+  if(e.target === modal) closeColorModal();
+});
+modalClose.addEventListener("click", closeColorModal);
+
+/* ===== 描画 ===== */
 function render(){
-  grid.innerHTML="";
-  groups.forEach(g=>{
-    const card=document.createElement("div");
-    card.className="card";
-    card.dataset.id=g.id;
-    card.style.setProperty("--accent",g.accent);
+  grid.innerHTML = "";
 
-    card.innerHTML=`
-      <div class="color-strip"></div>
-      <div class="row">
-        <div>
-          <button class="btn minus">−</button>
-          <button class="btn plus">＋</button>
-        </div>
-        <div class="value">${g.value}</div>
+  groups.forEach(g => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.id = g.id;
+    card.style.setProperty("--accent", g.accent);
+
+    card.innerHTML = `
+      <div class="color-strip" title="長押しで色変更"></div>
+
+      <div class="toprow">
+        <input class="name-input" data-name value="${esc(g.name)}">
+        <button class="iconbtn" type="button" data-action="delete" title="このグループを削除">✕</button>
       </div>
+
+      <div class="row">
+        <div class="btns">
+          <button class="btn minus" type="button" data-action="dec">−</button>
+          <button class="btn plus"  type="button" data-action="inc">＋</button>
+        </div>
+        <div class="value" data-value>${g.value}</div>
+      </div>
+
+      <details class="memo">
+        <summary>メモ</summary>
+        <textarea class="memo-area" data-memo placeholder="このグループのメモ（自動保存）">${esc(g.memo)}</textarea>
+      </details>
     `;
 
-    // ===== 長押しは strip に直接付ける =====
-    const strip=card.querySelector(".color-strip");
-    let timer=null;
+    // --- 長押し（帯だけに付ける：誤判定防止＆安定） ---
+    const strip = card.querySelector(".color-strip");
+    let timer = null;
 
-    strip.addEventListener("touchstart",e=>{
+    strip.addEventListener("touchstart", (e) => {
+      // iOSの選択/長押しメニュー抑止
       e.preventDefault();
-      timer=setTimeout(()=>{
+
+      timer = setTimeout(() => {
         openColorModal(g.id);
-      },600);
-    },{passive:false});
+      }, 650); // 長押し時間（好みで 500〜800ms）
+    }, { passive:false });
 
-    strip.addEventListener("touchend",()=>clearTimeout(timer));
-    strip.addEventListener("touchmove",()=>clearTimeout(timer));
-
-    // ボタン処理
-    card.querySelector(".plus").onclick=()=>{
-      g.value++; save(); render();
-    };
-    card.querySelector(".minus").onclick=()=>{
-      g.value=Math.max(0,g.value-1); save(); render();
-    };
+    strip.addEventListener("touchend", () => { clearTimeout(timer); timer = null; });
+    strip.addEventListener("touchmove", () => { clearTimeout(timer); timer = null; });
 
     grid.appendChild(card);
   });
 }
 
-function openColorModal(id){
-  const g=groups.find(x=>x.id===id);
-  if(!g)return;
-  palette.innerHTML="";
-  ACCENTS.forEach(color=>{
-    const b=document.createElement("button");
-    b.className="color-btn";
-    b.style.background=color;
-    b.onclick=()=>{
-      g.accent=color;
-      save(); render();
-      modal.style.display="none";
-    };
-    palette.appendChild(b);
+/* =========================
+   イベント（ボタン/入力）
+========================= */
+
+// + / - / 削除（click）
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if(!btn) return;
+
+  const card = btn.closest(".card");
+  const id = card?.dataset.id;
+  if(!id) return;
+
+  const g = groups.find(x => x.id === id);
+  if(!g) return;
+
+  const action = btn.dataset.action;
+
+  if(action === "inc"){
+    g.value += 1;
+    card.querySelector("[data-value]").textContent = g.value;
+    save();
+    return;
+  }
+
+  if(action === "dec"){
+    g.value = Math.max(0, g.value - 1); // 0未満禁止
+    card.querySelector("[data-value]").textContent = g.value;
+    save();
+    return;
+  }
+
+  if(action === "delete"){
+    if(confirm(`「${g.name}」を削除しますか？`)){
+      groups = groups.filter(x => x.id !== id);
+      rebuildAccentPool();
+      save();
+      render();
+    }
+    return;
+  }
+});
+
+// 名前/メモ（入力中に保存。renderしない＝カーソルが飛ばない）
+document.addEventListener("input", (e) => {
+  const card = e.target.closest(".card");
+  if(!card) return;
+
+  const id = card.dataset.id;
+  const g = groups.find(x => x.id === id);
+  if(!g) return;
+
+  if(e.target.matches("input[data-name]")){
+    g.name = e.target.value;
+    save();
+    return;
+  }
+
+  if(e.target.matches("textarea[data-memo]")){
+    g.memo = e.target.value;
+    save();
+    return;
+  }
+});
+
+// 追加
+document.getElementById("addGroupBtn").addEventListener("click", () => {
+  const n = nextGroupNumber();
+  groups.push({
+    id: makeId(),
+    name: `グループ${n}`,
+    value: 0,
+    memo: "",
+    accent: pickAccent()
   });
-  modal.style.display="flex";
-}
+  rebuildAccentPool();
+  save();
+  render();
+});
 
-modal.onclick=e=>{
-  if(e.target===modal) modal.style.display="none";
-};
+// 初期化
+document.getElementById("resetBtn").addEventListener("click", () => {
+  const ok = confirm("初期化します。\n（グループ数・名前・数値・メモ・色が初期状態に戻ります）\nよろしいですか？");
+  if(!ok) return;
 
+  groups = defaultGroups();
+  save();
+  render();
+});
+
+/* =========================
+   起動
+========================= */
 load();
+rebuildAccentPool();
 render();
 </script>
 </body>
